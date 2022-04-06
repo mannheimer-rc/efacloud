@@ -236,23 +236,23 @@ if (! isset($_GET["version"])) {
     } else {
         
         // Read configuration. First try single file configuration
-        include_once 'classes/toolbox.php'; // only for static access. Toolbox instance
-                                            // creation will fail due to the install.php sitting in
-                                            // the root directory instead of a subdirectory
+        include_once 'classes/tfyh_toolbox.php'; // only for static access. Toolbox instance
+                                                 // creation will fail due to the install.php sitting in
+                                                 // the root directory instead of a subdirectory
         $settings_file_path = "config/settings";
         $cfg = [];
         if (file_exists($settings_file_path)) {
             $cfgStrBase64 = file_get_contents($settings_file_path);
             $cfg = ($cfgStrBase64) ? unserialize(base64_decode($cfgStrBase64)) : [];
             if ($cfg["db_up"])
-                $cfg["db_up"] = Toolbox::swap_lchars($cfg["db_up"]);
+                $cfg["db_up"] = Tfyh_toolbox::swap_lchars($cfg["db_up"]);
         } else  // Configuration split into data base connection and application parameters
             if (file_exists($settings_file_path . "_db")) {
                 // read data base connection configuration first
                 $cfgStrBase64 = file_get_contents($settings_file_path . "_db");
                 $cfg = ($cfgStrBase64) ? unserialize(base64_decode($cfgStrBase64)) : [];
                 if ($cfg["db_up"])
-                    $cfg["db_up"] = Toolbox::swap_lchars($cfg["db_up"]);
+                    $cfg["db_up"] = Tfyh_toolbox::swap_lchars($cfg["db_up"]);
             }
         
         // test access
