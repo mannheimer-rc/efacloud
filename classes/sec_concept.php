@@ -174,7 +174,7 @@ class Sec_concept
         $this->variables["ChangesAll"] = $changes_all;
         
         // privilegierteNutzer
-        $privileged_list = new Tfyh_list("../config/lists/verwalten", 6, "Privilegierte Nutzer", $this->socket, 
+        $privileged_list = new Tfyh_list("../config/lists/verwalten", 3, "Privilegierte Nutzer", $this->socket, 
                 $this->toolbox);
         $privileged_rows = $privileged_list->get_rows();
         $privileged_str = "";
@@ -183,7 +183,7 @@ class Sec_concept
                      " " . $privileged_row[4] . "<br>";
         $this->variables["privilegierteNutzer"] = $privileged_str;
         // efaAdminNutzer
-        $efa_admins_list = new Tfyh_list("../config/lists/verwalten", 7, "Nutzer mit efa-Admin Rechten", 
+        $efa_admins_list = new Tfyh_list("../config/lists/verwalten", 4, "Nutzer mit efa-Admin Rechten", 
                 $this->socket, $this->toolbox);
         $efa_admins_rows = $efa_admins_list->get_rows();
         $efa_admins_str = "";

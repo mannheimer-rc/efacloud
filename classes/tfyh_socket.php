@@ -4,9 +4,8 @@ interface Tfyh_socket_listener
 {
 
     /**
-     * This function is called after each data base transaction, to all listeners for write
-     * transaction only.
-     *
+     * This function is called after each data base transaction, to all listeners for write transaction only.
+     * 
      * @param String $tx_type
      *            the type of the transaction, e.g. "delete", "update", "insert".
      * @param String $tx_tablename
@@ -18,8 +17,8 @@ interface Tfyh_socket_listener
 }
 
 /**
- * class file for the Tfyh_socket class A utility class to connect to the data base. provides simple
- * get and put functions to read and write values.
+ * class file for the Tfyh_socket class A utility class to connect to the data base. provides simple get and
+ * put functions to read and write values.
  */
 class Tfyh_socket
 {
@@ -30,24 +29,9 @@ class Tfyh_socket
     private $mysqli;
 
     /**
-     * data base host. Do not use loclahost, but 127.0.0.1 instead.
-     */
-    private $db_host;
-
-    /**
      * data base name
      */
     private $db_name;
-
-    /**
-     * data base user (account)
-     */
-    private $db_user;
-
-    /**
-     * data base user's password
-     */
-    private $db_pwd;
 
     /**
      * The common toolbox used.
@@ -67,6 +51,11 @@ class Tfyh_socket
     /**
      * debug file name for sql-queries
      */
+    private $sql_error_file = "../log/sys_sql_errors.log";
+
+    /**
+     * debug file name for sql-queries
+     */
     private $debug_on;
 
     /**
@@ -75,23 +64,50 @@ class Tfyh_socket
     public $last_sql_executed = "";
 
     /**
-     * Construct the socket. This initializes the data base connection. $cfg must contain the
-     * appropriate values for: $cfg["db_host"], $cfg["db_accounts"], $cfg["db_name"] to get it
-     * going.
-     *
+     * Construct the socket. This initializes the data base connection. $cfg must contain the appropriate
+     * values for: $cfg["db_host"], $cfg["db_accounts"], $cfg["db_name"] to get it going.
+     * 
      * @param array $toolbox
      *            the basic utilities of the application.
      */
     function __construct (Tfyh_toolbox $toolbox)
     {
         $cfg = $toolbox->config->get_cfg();
-        $this->db_host = $cfg["db_host"];
         $this->db_name = $cfg["db_name"];
-        $this->db_user = $cfg["db_user"];
-        $this->db_pwd = $cfg["db_up"];
         $this->mysqli = null;
         $this->toolbox = $toolbox;
         $this->debug_on = $toolbox->config->debug_level > 0;
+    }
+
+    /**
+     * A wrapper to manage exceptions
+     * 
+     * @param String $sql_cmd            
+     */
+    private function mysqli_query (String $sql_cmd, String $caller_text = "tfyh_socket->mysqli_query")
+    {
+        $this->last_sql_executed = $sql_cmd;
+        $log_opener = date("Y-m-d H:i:s") . ": [" . $caller_text . "] " . $sql_cmd . " => ";
+        try {
+            if ($this->debug_on)
+                file_put_contents($this->sql_debug_file, $log_opener, FILE_APPEND);
+            $result = $this->mysqli->query($sql_cmd);
+            if ($result === false) {
+                $log_error = "[FAILED] " . $this->mysqli->error . json_encode($result) . "\n";
+                file_put_contents($this->sql_error_file, $log_opener . $log_error, FILE_APPEND);
+                if ($this->debug_on)
+                    file_put_contents($this->sql_debug_file, $log_error, FILE_APPEND);
+            } elseif ($this->debug_on) {
+                file_put_contents($this->sql_debug_file, "[OK] " . json_encode($result) . "\n", FILE_APPEND);
+            }
+        } catch (Exception $e) {
+            $result = false;
+            $log_error = "[EXCEPTION] " . $this->mysqli->error . "\n";
+            file_put_contents($this->sql_error_file, $log_opener . $log_error, FILE_APPEND);
+            if ($this->debug_on)
+                file_put_contents($this->sql_debug_file, $log_error, FILE_APPEND);
+        }
+        return $result;
     }
 
     /**
@@ -99,49 +115,35 @@ class Tfyh_socket
      */
     
     /**
-     * Connect to the data base as was configured. $cfg in constructor must contain the appropriate
-     * values for: $cfg["db_host"], $cfg["db_user"], $cfg["db_up"], $cfg["db_name"] to get it going.
-     * Returns error String on failure and true on success.
-     */
-    private function open ()
-    {
-        // do not connect, if connection is open.
-        if (is_null($this->mysqli) || (! $this->mysqli->ping())) {
-            // this will only connect, if $cfg contains the respective settings.
-            $this->mysqli = new mysqli($this->db_host, $this->db_user, $this->db_pwd, $this->db_name);
-        }
-        if ($this->mysqli->connect_error) {
-            return $this->mysqli->connect_error . "<br>db_user: " . $this->db_user . ".";
-        } else {
-            $this->mysqli->query("SET NAMES 'UTF8'");
-            return true;
-        }
-    }
-
-    /**
-     * Test the connection. Will open the connection, if not yet done and try to query "SELECT 1" to
-     * test the data base.
-     *
+     * Test the connection. Will open the connection, if not yet done and try to query "SELECT 1" to test the
+     * data base.
+     * 
      * @return true, if test statement succeeded; an error message, if not.
      */
     public function open_socket ()
     {
-        // do not connect, if connection is open.
-        if (is_null($this->mysqli) || (! $this->mysqli->ping()))
-            // this will only connect with the correct settings in the settings_db file.
-            $this->mysqli = new mysqli($this->db_host, $this->db_user, $this->db_pwd, $this->db_name);
-        if ($this->mysqli->connect_error)
+        // do nothing, if connection is open.
+        if (! is_null($this->mysqli) && $this->mysqli->ping())
+            return true;
+        $cfg = $this->toolbox->config->get_cfg();
+        // this will only connect with the correct settings in the settings_db file.
+        try {
+            $this->mysqli = new mysqli($cfg["db_host"], $cfg["db_user"], $cfg["db_up"], $this->db_name);
+        } catch (exception $e) {
+            return "Data base connection failed: " . $e->getMessage();
+        }
+            if ($this->mysqli->connect_error)
             return "Data base connection error: " . $this->mysqli->connect_error . ".";
-        $this->mysqli->query("SET NAMES 'UTF8'");
-        $ret = $this->mysqli->query("SELECT 1");
-        // cf.
-        // https://stackoverflow.com/questions/3668506/efficient-sql-test-query-or-validation-query-that-will-work-across-all-or-most
+        $this->mysqli_query("SET NAMES 'UTF8'", "open_socket");
+        $ret = $this->mysqli_query("SELECT 1", "open_socket");
+        // cf. https://stackoverflow.com/questions/3668506/efficient-sql-test-query-or-
+        // validation-query-that-will-work-across-all-or-most
         return ($ret !== false) ? true : "Data base connection successful, but test statement 'SELECT 1' failed.";
     }
 
     /**
      * Add a write transaction listener to the socket.
-     *
+     * 
      * @param Tfyh_socket_listener $socket_listener            
      */
     public function add_listener (Tfyh_socket_listener $socket_listener)
@@ -160,24 +162,26 @@ class Tfyh_socket
     }
 
     /**
-     * Raw data base query. Will open the connection, if not yet done. The SQL-command is logged and
-     * the plain result returned. Values will still be UTF-8 encoded, as the data base shall be.
-     *
+     * Get the numer of affected rows for the last sql command executed. See mysqli::$affected_rows for return
+     * value meaning.
+     * 
+     * @return int|mixed mysqli->affected_rows
+     */
+    public function affected_rows ()
+    {
+        return $this->mysqli->affected_rows;
+    }
+
+    /**
+     * Raw data base query. Will open the connection, if not yet done. The SQL-command is logged and the plain
+     * result returned. Values will still be UTF-8 encoded, as the data base shall be.
+     * 
      * @param String $sql_cmd            
      * @return mixed msqli-query result or false in case of data base connection failure.
      */
     public function query (String $sql_cmd)
     {
-        if ($this->debug_on) {
-            file_put_contents($this->sql_debug_file, 
-                    date("Y-m-d H:i:s") . ": [tfyh_socket->query] " . $sql_cmd . "\n", FILE_APPEND);
-        }
-        $ret = $this->mysqli->query($sql_cmd);
-        if ($this->debug_on && ($ret === false))
-            file_put_contents($this->sql_debug_file, 
-                    date("Y-m-d H:i:s") . ": [tfyh_socket->query error] " . $this->mysqli->error .
-                             "\n", FILE_APPEND);
-        return $ret;
+        return $this->mysqli_query($sql_cmd, "custom query");
     }
 
     /**
@@ -197,9 +201,9 @@ class Tfyh_socket
      */
     
     /**
-     * Delete all entries from chage log which are older than $days_to_keep * 24*3600 seconds. And
-     * limits the log also to $records_to_keep records. Issues no warnings and no errors.
-     *
+     * Delete all entries from chage log which are older than $days_to_keep * 24*3600 seconds. And limits the
+     * log also to $records_to_keep records. Issues no warnings and no errors.
+     * 
      * @param int $days_to_keep
      *            time limit for deletion.
      * @param int $records_to_keep
@@ -212,15 +216,15 @@ class Tfyh_socket
         $eldest_change = date("Y-m-d H:i:s", $now);
         $sql_cmd = "DELETE FROM `" . $this->toolbox->config->changelog_name . "` WHERE `Time`<'" .
                  $eldest_change . "'";
-        $this->mysqli->query($sql_cmd);
+        $this->mysqli_query($sql_cmd, "cleanse_change_log");
         // now delete those which are just an overflow, e. g. by data base loading
         $sql_cmd = "SELECT `Time` FROM `" . $this->toolbox->config->changelog_name .
                  "` WHERE 1 ORDER BY `Time` DESC LIMIT " . ($records_to_keep + 2);
-        $res = $this->mysqli->query($sql_cmd);
-        if (intval($res->num_rows) > 0) {
+        $res = $this->mysqli_query($sql_cmd);
+        $rows = 0;
+        if (($res !== false) && intval($res->num_rows) > 0) {
             $row = $res->fetch_row();
             $max_change = $eldest_change;
-            $rows = 0;
             while ($row) {
                 $max_change = $row[0];
                 $rows ++;
@@ -230,7 +234,7 @@ class Tfyh_socket
         if ($rows > $records_to_keep) {
             $sql_cmd = "DELETE FROM `" . $this->toolbox->config->changelog_name . "` WHERE `Time`<'" .
                      $max_change . "'";
-            $this->mysqli->query($sql_cmd);
+            $this->mysqli_query($sql_cmd);
         }
     }
 
@@ -241,16 +245,18 @@ class Tfyh_socket
     {
         $sql_cmd = "SELECT `Author`, `Time`, `ChangedTable`, `ChangedID`, `Modification` FROM `" .
                  $this->toolbox->config->changelog_name . "` WHERE 1 ORDER BY `ID` DESC LIMIT 200";
-        $res = $this->mysqli->query($sql_cmd);
-        if (intval($res->num_rows) > 0)
+        $res = $this->mysqli_query($sql_cmd, "get_change_log");
+        if ($res === false)
+            return "<h3>Changes</h3><br>Error executing database SELECT statement.";
+        elseif (intval($res->num_rows) > 0)
             $row = $res->fetch_row();
         else
             return "No changes logged.";
         $ret = "";
         while ($row) {
-            $ret .= "<p><b>Author:</b> " . $row[0] . "<br><b>Time:</b> " . $row[1] .
-                     "<br><b>Table:</b> " . $row[2] . "<br><b>changed ID:</b> " . $row[3] .
-                     "<br><b>Description:</b> " . $row[4] . "<br></p>\n";
+            $ret .= "<p><b>Author:</b> " . $row[0] . "<br><b>Time:</b> " . $row[1] . "<br><b>Table:</b> " .
+                     $row[2] . "<br><b>changed ID:</b> " . $row[3] . "<br><b>Description:</b> " . $row[4] .
+                     "<br></p>\n";
             $row = $res->fetch_row();
         }
         return "<h3>Changes</h3><br>\n" . $ret;
@@ -258,30 +264,31 @@ class Tfyh_socket
 
     /**
      * Execute an SQL command an log the result.
-     *
+     * 
      * @param String $appUserID
-     *            the ID of the application user of the user who performs the statement. For change
-     *            logging.
+     *            the ID of the application user of the user who performs the statement. For change logging.
      * @param String $table_name
      *            the name of the table to be used.
      * @param String $sql_cmd
      *            Command to be executed. Values within command must be UTF-8 encoded.
      * @param String $changed_id
-     *            ID of changed entry. In case of inert statement, set to "" to use autoincremented
-     *            id of inserted
+     *            ID of changed entry. In case of inert statement, set to "" to use autoincremented id of
+     *            inserted
      * @param String $change_entry
-     *            Change text to be logged. Values within change text must be UTF-8 encoded.
+     *            Change text to be logged. Values within change text must be UTF-8 encoded, single quotes
+     *            must be escaped.
      * @param bool $return_insert_id
-     *            set true to try to return the insert id upon success. Use only when called with
-     *            INSERT INTO statement.
-     * @return mixed an error statement in case of failure, the numeric ID of the inserted record in
-     *         case of insert-to success, else "".
+     *            set true to try to return the insert id upon success. Use only when called with INSERT INTO
+     *            statement.
+     * @param bool $caller_text
+     *            indicate the calling function as String.
+     * @return mixed an error statement in case of failure, the numeric ID of the inserted record in case of
+     *         insert-to success, else "".
      */
     private function execute_and_log (String $appUserID, String $table_name, String $sql_cmd, 
-            String $changed_id, String $change_entry, bool $return_insert_id)
+            String $changed_id, String $change_entry, bool $return_insert_id, String $caller_text)
     {
         // debug helper
-        $this->last_sql_executed = $sql_cmd;
         if ($this->debug_on) {
             file_put_contents($this->sql_debug_file, 
                     date("Y-m-d H:i:s") . ":  [tfyh_socket->execute_and_log] " . $sql_cmd . " => ", 
@@ -289,7 +296,7 @@ class Tfyh_socket
         }
         // execute sql command. Connection must have been opened before.
         $ret = "";
-        $res = $this->mysqli->query($sql_cmd);
+        $res = $this->mysqli_query($sql_cmd, $caller_text);
         if ($res === false) {
             if ($this->debug_on)
                 file_put_contents($this->sql_debug_file, "failed: " . $this->mysqli->error . "\n", 
@@ -307,10 +314,10 @@ class Tfyh_socket
                 $changed_id = $this->mysqli->insert_id;
             // write change log entry
             $sql_cmd = "INSERT INTO `" . $this->toolbox->config->changelog_name .
-                     "` (`Author`, `Time`, `ChangedTable`, `ChangedID`, `Modification`) VALUES ('" .
-                     $appUserID . "', CURRENT_TIMESTAMP, '" . $table_name . "', '" . $changed_id .
-                     "', '" . str_replace("'", "\'", $change_entry) . "');";
-            $tmpr = $this->mysqli->query($sql_cmd);
+                     "` (`Author`, `Time`, `ChangedTable`, `ChangedID`, `Modification`) VALUES ('" . $appUserID .
+                     "', CURRENT_TIMESTAMP, '" . $table_name . "', '" . $changed_id . "', '" .
+                     str_replace("'", "\'", $change_entry) . "');";
+            $tmpr = $this->mysqli_query($sql_cmd, "[change-log entry]");
         }
         return $ret;
     }
@@ -321,33 +328,35 @@ class Tfyh_socket
     
     /**
      * Remove user right fields from record, if the user is no user admin
-     *
+     * 
      * @param int $appUserID
-     *            the ID of the application user of the user who performs the statement. For change
-     *            logging.
+     *            the ID of the application user of the user who performs the statement. For change logging.
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $record
-     *            a named array with key = column name and value = values to be inserted. Values
-     *            must be PHP native encoded Strings. Enclosed quotes "'" will be appropriately
-     *            escaped for the SQL command.
-     * @return array the same record, but user accss rights fields unset for a user who has not the
-     *         user admin role.
+     *            a named array with key = column name and value = values to be inserted. Values must be PHP
+     *            native encoded Strings. Enclosed quotes "'" will be appropriately escaped for the SQL
+     *            command.
+     * @return array the same record, but user accss rights fields unset for a user who has not the user admin
+     *         role.
      */
     private function protect_user_rights (int $appUserID, String $table_name, array $record)
     {
         if (strcasecmp($table_name, $this->toolbox->users->user_table_name) != 0)
             // this is no user data table: ok.
             return $record;
-        $user = $this->find_record($table_name, $this->toolbox->users->user_id_field_name, 
-                $appUserID);
+        $users_cnt = $this->count_records($this->toolbox->users->user_table_name);
+        if ($users_cnt == 0)
+            // the very first user must get the priviledge to be inserted anyway, with user admin rights.
+            return $record;
+        
+        $user = $this->find_record($table_name, $this->toolbox->users->user_id_field_name, $appUserID);
         
         if (strcasecmp($user["Rolle"], $this->toolbox->users->useradmin_role) == 0)
             // user has user administration priviledge: ok.
             return $record;
         
-        if (($user === false) && ! isset($record["ID"]) &&
-                 (! isset($record["Rolle"]) ||
+        if (($user === false) && ! isset($record["ID"]) && (! isset($record["Rolle"]) ||
                  (strcasecmp($record["Rolle"], $this->toolbox->users->anonymous_role) == 0)) &&
                  (intval($record["Workflows"]) == 0) && (intval($record["Concessions"]) == 0))
             // if the $record["ID"] is not set, this is a registration. Allow it for no user rights.
@@ -355,47 +364,46 @@ class Tfyh_socket
         
         if (isset($record["ID"]) && intval($record["ID"]) != intval($user["ID"]))
             // this is a different users data and the user is no useradmin: forbidden
-            return "User tried to modify other users data without useradmin role.";
+            return "User tried to modify other users data without useradmin role";
         
         // check change of role, workflows, concessions, userID or account name
-        if (isset($record["Rolle"]) && (strcasecmp($record["Rolle"], $user["Rolle"]) != 0))
-            return "User tried to modify own access role without useradmin role.";
-        if (isset($record["Workflows"]) &&
-                 (intval($record["Workflows"]) != intval($user["Workflows"])))
-            return "User tried to modify own Workflows role without useradmin role.";
-        if (isset($record["Concessions"]) &&
-                 (intval($record["Concessions"]) != intval($user["Concessions"])))
-            return "User tried to modify own Concessions role without useradmin role.";
+        if (isset($record["Rolle"]) && (strcasecmp($record["Rolle"], $user["Rolle"]) != 0) &&
+                 (strcasecmp($record["Rolle"], $this->toolbox->users->self_registered_role) != 0))
+            return "User tried to modify own access role without useradmin role";
+        if (isset($record["Workflows"]) && (intval($record["Workflows"]) != intval($user["Workflows"])))
+            return "User tried to modify own Workflows role without useradmin role";
+        if (isset($record["Concessions"]) && (intval($record["Concessions"]) != intval($user["Concessions"])))
+            return "User tried to modify own Concessions role without useradmin role";
         if (isset($record[$this->toolbox->users->user_id_field_name]) && (intval(
                 $record[$this->toolbox->users->user_id_field_name]) != intval(
                 $user[$this->toolbox->users->user_id_field_name])))
-            return "User tried to modify own user ID without useradmin role.";
+            return "User tried to modify own user ID " . $user[$this->toolbox->users->user_id_field_name] .
+                     " to " . $record[$this->toolbox->users->user_id_field_name] . " without useradmin role";
         if (isset($record[$this->toolbox->users->user_account_field_name]) && (strcasecmp(
                 $record[$this->toolbox->users->user_account_field_name], 
-                $user[$this->toolbox->users->user_id_field_name]) != 0))
-            return "User tried to modify own account name without useradmin role.";
+                $user[$this->toolbox->users->user_account_field_name]) != 0))
+            return "User tried to modify own account name " .
+                     $user[$this->toolbox->users->user_account_field_name] . " to " .
+                     $record[$this->toolbox->users->user_account_field_name] . " without useradmin role";
         
         // All checks passed: ok.
         return $record;
     }
 
     /**
-     * Insert a data record into the table with the given name. Checks the column names and removes
-     * the field which do not fit. Does not check any key or value, but lets the data base decide on
-     * what can be inserted and what not. If the table has a declared history field it adds the
-     * version to the history.
-     *
+     * Insert a data record into the table with the given name. Checks the column names and removes the field
+     * which do not fit. Does not check any key or value, but lets the data base decide on what can be
+     * inserted and what not. If the table has a declared history field it adds the version to the history.
+     * 
      * @param String $appUserID
-     *            the ID of the application user of the user who performs the statement. For change
-     *            logging.
+     *            the ID of the application user of the user who performs the statement. For change logging.
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $record
-     *            a named array with key = column name and value = values to be inserted. Values
-     *            must be PHP native encoded Strings. Enclosed quotes "'" will be appropriately
-     *            escaped for the SQL command.
-     * @return mixed ID of inserted record on success, else a String with warnings and error
-     *         messages.
+     *            a named array with key = column name and value = values to be inserted. Values must be PHP
+     *            native encoded Strings. Enclosed quotes "'" will be appropriately escaped for the SQL
+     *            command.
+     * @return mixed ID of inserted record on success, else a String with warnings and error messages.
      */
     public function insert_into (String $appUserID, String $table_name, array $record)
     {
@@ -406,8 +414,7 @@ class Tfyh_socket
         // initialize history data field
         $historyField = (isset($this->toolbox->config->settings_tfyh["history"][$table_name])) ? $this->toolbox->config->settings_tfyh["history"][$table_name] : false;
         if ($historyField) {
-            $excludeFields = (isset(
-                    $this->toolbox->config->settings_tfyh["historyExclude"][$table_name])) ? $this->toolbox->config->settings_tfyh["historyExclude"][$table_name] : "";
+            $excludeFields = (isset($this->toolbox->config->settings_tfyh["historyExclude"][$table_name])) ? $this->toolbox->config->settings_tfyh["historyExclude"][$table_name] : "";
             $record[$historyField] = $this->update_record_history(null, $record, $historyField, 
                     $excludeFields, $appUserID, 
                     $this->toolbox->config->settings_tfyh["maxversions"][$table_name]);
@@ -419,9 +426,10 @@ class Tfyh_socket
             $sql_cmd .= $key . "`, `";
             // no change logging for the record history. That would only create a lot of redundant
             // information
-            if (! isset($this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp(
-                    $key, $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0))
-                $change_entry .= $key . '="' . str_replace("'", "\'", $value) . '", ';
+            if (! isset($this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp($key, 
+                    $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0))
+                // No quote escaping in the change log entry. This will be handled in execute_and_log().
+                $change_entry .= $key . '="' . $value . '", ';
         }
         // cut off last ", `";
         $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 3);
@@ -439,7 +447,8 @@ class Tfyh_socket
             file_put_contents("../log/lwa/" . $appUserID, strval(time()));
         
         // execute sql command and log execution.
-        $res = $this->execute_and_log($appUserID, $table_name, $sql_cmd, "", $change_entry, true);
+        $res = $this->execute_and_log($appUserID, $table_name, $sql_cmd, "", $change_entry, true, 
+                "insert_into");
         // trigger listeners
         if (count($this->listeners) > 0) {
             foreach ($this->listeners as $listener)
@@ -449,26 +458,30 @@ class Tfyh_socket
     }
 
     /**
-     * Initialize or update the history field of a data record.
-     *
+     * Initialize or update the history field of a data record. Check the existance of a history field within
+     * the table structure before calling. Special function: The history field is emptied, if the history
+     * field value in the new record is set to "REMOVE!" (without quotation, 7 characters String).
+     * 
      * @param array $current_record
-     *            the current data record. Set to null for the insert into operation. If not null it
-     *            must include the data field $current_record[$history_field_name]. If it does not,
-     *            an empty String is returned.
+     *            the current data record. Set to null for the insert into operation. If not null it must
+     *            include the data field $current_record[$history_field_name]. If it does not, an empty String
+     *            is returned.
      * @param array $new_record
      *            the new data record. May be incomplete. If it contains the data field
      *            $record[$history_field_name] that field will be ignored.
      * @param String $history_field_name
      *            the name of the data field which contains the record history.
      * @param String $history_field_name
-     *            the name of the data field which contains the lists of fields to exclude from the
-     *            record history.
+     *            the name of the data field which contains the lists of fields to exclude from the record
+     *            history.
      * @return the new JSON encoded String for the history field
      */
     private function update_record_history (array $current_record = null, array $new_record, 
-            String $history_field_name, String $history_field_exclude, int $appUserID, 
-            int $max_versions)
+            String $history_field_name, String $history_field_exclude, int $appUserID, int $max_versions)
     {
+        if (isset($new_record[$history_field_name]) &&
+                 (strcmp($new_record[$history_field_name], "REMOVE!") == 0))
+            return "";
         // There is a current record, but without a history entry
         if (! is_null($current_record) && (! isset($current_record[$history_field_name]) ||
                  (strlen($current_record[$history_field_name]) < 5))) {
@@ -508,15 +521,14 @@ class Tfyh_socket
         if (count($record_versions) >= $max_versions)
             $record_versions = array_splice($record_versions, 1 - $max_versions);
         
-        // add missing version numbers to support previously used history field text encoding.
+        // conversion of obsolete pre-2021 history field text encoding.
         $last_version_number = 0;
         for ($i = 0; $i < count($record_versions); $i ++) {
             $record_version = $record_versions[$i];
             if (strlen(trim($record_version)) > 0) {
-                $version_number_str = (strpos($record_version, ";") !== false) ? substr(
-                        $record_version, 0, strpos($record_version, ";")) : "";
-                $version_number_int = (is_numeric($version_number_str)) ? intval(
-                        $version_number_str) : 0;
+                $version_number_str = (strpos($record_version, ";") !== false) ? substr($record_version, 0, 
+                        strpos($record_version, ";")) : "";
+                $version_number_int = (is_numeric($version_number_str)) ? intval($version_number_str) : 0;
                 if ($version_number_int == 0) {
                     $last_version_number ++;
                     $record_versions[$i] = $last_version_number . ";0;0;" .
@@ -538,23 +550,22 @@ class Tfyh_socket
             $is_history_field = ($fieldname == $history_field_name);
             $is_exclude_field = (strpos($history_field_exclude, "." . $fieldname . ".") !== false);
             if (! $is_history_field && ! $is_exclude_field) {
-                $is_changed = isset($current_record[$fieldname]) &&
-                         ($value !== $current_record[$fieldname]);
+                $is_changed = ! isset($current_record[$fieldname]) || ($value !== $current_record[$fieldname]);
                 if ($is_changed) {
                     $any_changes = true;
                     $new_value = strval($value);
                     if (strlen($new_value) > 1024)
                         $new_value = substr($new_record[$fieldname], 0, 1020) . "...";
-                    $new_version .= $this->toolbox->encode_entry_csv($fieldname . ":" . $new_value) .
-                             ";";
+                    $new_version .= $this->toolbox->encode_entry_csv($fieldname . ":" . $new_value) . ";";
                 }
             }
         }
         $new_version = substr($new_version, 0, strlen($new_version) - 1);
-        
         // add the new version, if there were changes, to the history array and return it.
         if ($any_changes)
             $record_versions[] = $new_version;
+        
+        // compile the history String
         $record_history = "";
         foreach ($record_versions as $record_version)
             if (strlen(trim($record_version)) > 0)
@@ -564,21 +575,20 @@ class Tfyh_socket
 
     /**
      * Little helper to create the "WHERE" - clause to match the $matching key.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching
-     *            the key to be matched. It may containe one or more fields. Values must be UTF-8
-     *            encoded Strings.
+     *            the key to be matched. It may containe one or more fields. Values must be UTF-8 encoded
+     *            Strings.
      * @param String $condition
-     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get
-     *            every record or set "NULL" to get all records with the value being NULL. Set "IN"
-     *            with the value being the appropraite formatted array String to get values matching
-     *            the given array. You can use a condition for each matching field, if so wished, by
-     *            listing them comma separated, e.g. >,= for two fields if which the first shall be
-     *            greater, the second equal to the respective values. If more matching values are
-     *            provided, than conditions, the last condition is taken for all extra matching
-     *            fields.
+     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get every record
+     *            or set "NULL" to get all records with the value being NULL. Set "IN" with the value being
+     *            the appropraite formatted array String to get values matching the given array. You can use a
+     *            condition for each matching field, if so wished, by listing them comma separated, e.g. >,=
+     *            for two fields if which the first shall be greater, the second equal to the respective
+     *            values. If more matching values are provided, than conditions, the last condition is taken
+     *            for all extra matching fields.
      */
     private function clause_for_wherekeyis (String $table_name, array $matching, String $condition)
     {
@@ -607,10 +617,10 @@ class Tfyh_socket
 
     /**
      * Little helper to create the matched record for logging based on the $matching key.
-     *
+     * 
      * @param array $matching
-     *            the key to be matched. It may containe one or more fields. Values must be PHP
-     *            native encoded Strings.
+     *            the key to be matched. It may containe one or more fields. Values must be PHP native encoded
+     *            Strings.
      */
     private function matched_record (array $matching)
     {
@@ -631,35 +641,35 @@ class Tfyh_socket
 
     /**
      * Convenience shortcut for update_record_matched with a primary key of name ID
+     * 
+     * @return an error statement in case of failure, else "".
      */
     public function update_record (String $appUserID, String $table_name, array $record)
     {
-        return $this->update_record_matched($appUserID, $table_name, 
-                ["ID" => $record["ID"]
-                ], $record);
+        return $this->update_record_matched($appUserID, $table_name, ["ID" => $record["ID"]
+        ], $record);
     }
 
     /**
-     * Update a record providing an array with $array[ column name ] = value. The record is matched
-     * using the $match_key column and the $record[$match_key] value.
-     *
+     * Update a record providing an array with $array[ column name ] = value. The record is matched using the
+     * $match_key column and the $record[$match_key] value.
+     * 
      * @param String $appUserID
-     *            the ID of the application user of the user who performs the statement. For change
-     *            logging.
+     *            the ID of the application user of the user who performs the statement. For change logging.
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching_keys
-     *            the keys to be matched. It may containe one or more field names as indexed array.
-     *            Values are part of the record provided. Values must be UTF-8 encoded Strings.
+     *            the keys to be matched. It may containe one or more field names as indexed array. Values are
+     *            part of the record provided. Values must be UTF-8 encoded Strings.
      * @param array $record
-     *            a named array with key = column name and value = values to be used for update.
-     *            Must contain an "ID" field to identify the record to update. Values must be PHP
-     *            native encoded. Enclosed quotes "'" will be appropriately escaped for the SQL
-     *            command. record fields will be UTF-8 decoded.
+     *            a named array with key = column name and value = values to be used for update. Must contain
+     *            an "ID" field to identify the record to update. Values must be PHP native encoded. Enclosed
+     *            quotes "'" will be appropriately escaped for the SQL command. record fields will be UTF-8
+     *            decoded.
      * @return an error statement in case of failure, else "".
      */
-    public function update_record_matched (String $appUserID, String $table_name, 
-            array $matching_keys, array $record)
+    public function update_record_matched (String $appUserID, String $table_name, array $matching_keys, 
+            array $record)
     {
         $record = $this->protect_user_rights($appUserID, $table_name, $record);
         if (! is_array($record))
@@ -668,11 +678,11 @@ class Tfyh_socket
         // update history data field
         $prev_rec = $this->find_record_matched($table_name, $matching_keys);
         if ($prev_rec === false)
-            return "Error updating record in $table_name with key: " . json_encode($matching_keys);
+            return "Error updating record in $table_name. Could not find record with key: " .
+                     json_encode($matching_keys);
         $historyField = (isset($this->toolbox->config->settings_tfyh["history"][$table_name])) ? $this->toolbox->config->settings_tfyh["history"][$table_name] : false;
         if ($historyField) {
-            $excludeFields = (isset(
-                    $this->toolbox->config->settings_tfyh["historyExclude"][$table_name])) ? $this->toolbox->config->settings_tfyh["historyExclude"][$table_name] : "";
+            $excludeFields = (isset($this->toolbox->config->settings_tfyh["historyExclude"][$table_name])) ? $this->toolbox->config->settings_tfyh["historyExclude"][$table_name] : "";
             $record[$historyField] = $this->update_record_history($prev_rec, $record, $historyField, 
                     $excludeFields, $appUserID, 
                     $this->toolbox->config->settings_tfyh["maxversions"][$table_name]);
@@ -683,8 +693,8 @@ class Tfyh_socket
         $sql_cmd = "UPDATE `" . $table_name . "` SET ";
         foreach ($record as $key => $value) {
             // check empty values. 1a. If previous and current are empty, skip the field.
-            $skip_update = (! isset($prev_rec[$key]) || (strlen($prev_rec[$key]) == 0)) && (! isset(
-                    $value) || (strlen($value) == 0));
+            $skip_update = (! isset($prev_rec[$key]) || (strlen($prev_rec[$key]) == 0)) && (! isset($value) ||
+                     (strlen($value) == 0));
             // check mismatching fields. 1b. If the current record has an extra field, drop it.
             $skip_update = $skip_update || ! array_key_exists($key, $prev_rec);
             // skip matching keys, they are anyway equal
@@ -692,8 +702,8 @@ class Tfyh_socket
                 $skip_update = $skip_update || (strcasecmp($key, $matching_key) == 0);
             // check empty values. 2. If previous was not empty, and the record was numeric or a
             // date, try NULL as value
-            if (! $skip_update && (! $value && (strlen($value) == 0)) && (is_numeric(
-                    $prev_rec[$key]) || is_numeric(strtotime($prev_rec[$key]))))
+            if (! $skip_update && (! $value && (strlen($value) == 0)) && (is_numeric($prev_rec[$key]) ||
+                     is_numeric(strtotime($prev_rec[$key]))))
                 $sql_cmd .= "`" . $key . "` = NULL,";
             else 
                 if (! $skip_update)
@@ -701,10 +711,10 @@ class Tfyh_socket
             // the change entry shall neither contain the keys, nor the record history to
             // prevent from too much redundant information
             if (! $skip_update && (strcmp($value, $prev_rec[$key]) !== 0) && (! isset(
-                    $this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp(
-                    $key, $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0)))
-                $change_entry .= $key . ': "' . str_replace("'", "\'", 
-                        $prev_rec[$key] . '"=>"' . str_replace("'", "\'", $value)) . '", ';
+                    $this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp($key, 
+                    $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0)))
+                // No quote escaping in the change log entry. This will be handled in execute_and_log().
+                $change_entry .= $key . ': "' . $prev_rec[$key] . '"=>"' . $value . '", ';
         }
         $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 1);
         $change_entry = substr($change_entry, 0, strlen($change_entry) - 2);
@@ -716,7 +726,7 @@ class Tfyh_socket
         
         // execute sql command and log execution.
         $result = $this->execute_and_log($appUserID, $table_name, $sql_cmd, 
-                $this->matched_record($matching_keys), $change_entry, false);
+                $this->matched_record($matching_keys), $change_entry, false, "update_record");
         // trigger listeners
         if (count($this->listeners) > 0) {
             foreach ($this->listeners as $listener)
@@ -735,18 +745,17 @@ class Tfyh_socket
     }
 
     /**
-     * Delete a record. The record is matched using the $match_key column and the
-     * $record[$match_key] value. This deletes the entire record from the data base, including its
-     * history. It may only be restored manually using the change log.
-     *
+     * Delete a record. The record is matched using the $match_key column and the $record[$match_key] value.
+     * This deletes the entire record from the data base, including its history. It may only be restored
+     * manually using the change log.
+     * 
      * @param String $appUserID
-     *            the ID of the application user of the user who performs the statement. For change
-     *            logging.
+     *            the ID of the application user of the user who performs the statement. For change logging.
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching
-     *            the key to be matched. It may containe one or more fields. Values must be PHP
-     *            native encoded Strings.
+     *            the key to be matched. It may containe one or more fields. Values must be PHP native encoded
+     *            Strings.
      * @return String an error statement in case of failure, else "".
      */
     public function delete_record_matched (String $appUserID, String $table_name, array $matching)
@@ -755,15 +764,16 @@ class Tfyh_socket
         $prev_rec = $this->find_record_matched($table_name, $matching);
         if ($prev_rec === false)
             return "Record to delete was not found.";
-        $delete_entry = "deleted: ";
+        $change_entry = "deleted: ";
         
         // create SQL command and change log entry.
+        // No quote escaping in the change log entry. This will be handled in execute_and_log().
         foreach ($prev_rec as $key => $value) {
-            $delete_entry .= $key . "='" . str_replace('"', '\"', $prev_rec[$key]) . "', ";
+            $change_entry .= $key . "='" . $prev_rec[$key] . "', ";
         }
         // deletions will not change the last modified time stamp, because they
         // delete the data anyway.
-        $delete_entry = substr($delete_entry, 0, strlen($delete_entry) - 2);
+        $change_entry = substr($change_entry, 0, strlen($change_entry) - 2);
         // ID used is **ID**
         $sql_cmd .= "DELETE FROM `" . $table_name . "` " .
                  $this->clause_for_wherekeyis($table_name, $matching, "=");
@@ -773,8 +783,8 @@ class Tfyh_socket
             file_put_contents("../log/lwa/" . $appUserID, strval(time()));
         
         // execute sql command and log execution.
-        $result = $this->execute_and_log($appUserID, $table_name, $sql_cmd, 
-                $this->matched_record($matching), $delete_entry, false);
+        $result = $this->execute_and_log($appUserID, $table_name, $sql_cmd, $this->matched_record($matching), 
+                $change_entry, false, "delete_record");
         // trigger listeners
         if (count($this->listeners) > 0) {
             foreach ($this->listeners as $listener)
@@ -806,16 +816,16 @@ class Tfyh_socket
     }
 
     /**
-     * Find the first record as associative array of key => value matching the $matching key.
-     * Returns false, if the record key could not be matched or any other error occurred.
-     *
+     * Find the first record as associative array of key => value matching the $matching key. Returns false,
+     * if the record key could not be matched or any other error occurred.
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching
-     *            the key to be matched (Values in PHP native encoding). It may contain one or more
-     *            fields. Set to [] to get all.
-     * @return array first record found as associative array of key => value. False in case of
-     *         either connection error or no match. Values are UTF8 encoded.
+     *            the key to be matched (Values in PHP native encoding). It may contain one or more fields.
+     *            Set to [] to get all.
+     * @return array first record found as associative array of key => value. False in case of either
+     *         connection error or no match. Values are UTF8 encoded.
      */
     public function find_record_matched (String $table_name, array $matching)
     {
@@ -839,19 +849,18 @@ class Tfyh_socket
     }
 
     /**
-     * Find all records as indexed array of records, each as associative array of key => value
-     * matching the $matching key. Returns false, if the record key could not be matched or any
-     * other error occurred.
-     *
+     * Find all records as indexed array of records, each as associative array of key => value matching the
+     * $matching key. Returns false, if the record key could not be matched or any other error occurred.
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching
-     *            the key to be matched. It may contain one or more fields. Values must be PHP
-     *            native encoded Strings. Set to [] to get all.
+     *            the key to be matched. It may contain one or more fields. Values must be PHP native encoded
+     *            Strings. Set to [] to get all.
      * @param int $max_rows
      *            the maximum number of rows to be returned.
-     * @return array of records, each as associative array of key => value. False in case of either
-     *         connection error or no match. Values are UTF8 encoded.
+     * @return array of records, each as associative array of key => value. False in case of either connection
+     *         error or no match. Values are UTF8 encoded.
      */
     public function find_records_matched (String $table_name, array $matching, int $max_rows)
     {
@@ -862,45 +871,44 @@ class Tfyh_socket
     /**
      * Convenience shortcut for find_records_sorted_matched with a single matching field
      */
-    public function find_records_sorted (String $table_name, String $key, String $value, 
-            int $max_rows, String $condition, String $sort_key, bool $sort_ascending)
+    public function find_records_sorted (String $table_name, String $key, String $value, int $max_rows, 
+            String $condition, String $sort_key, bool $sort_ascending)
     {
         return $this->find_records_sorted_matched($table_name, [$key => $value
         ], $max_rows, $condition, $sort_key, $sort_ascending);
     }
 
     /**
-     * Find all records as indexed array of records, each as associative array of key => value
-     * matching the $matching key. Sort them in the requested order. Returns false, if the value is
-     * not found or any other error occurred.
-     *
+     * Find all records as indexed array of records, each as associative array of key => value matching the
+     * $matching key. Sort them in the requested order. Returns false, if the value is not found or any other
+     * error occurred.
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param array $matching
-     *            the key to be matched. It may contain one or more fields. Values must be PHP
-     *            native encoded Strings. Set to [] to get all.
+     *            the key to be matched. It may contain one or more fields. Values must be PHP native encoded
+     *            Strings. Set to [] to get all.
      * @param int $max_rows
      *            the maximum number of rows to be returned.
      * @param String $condition
-     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get
-     *            every record or set "NULL" to get all records with the value being NULL. Set "IN"
-     *            with the value being the appropraite formatted array String to get values matching
-     *            the given array. You can use a condition for each matching field, if so wished, by
-     *            listing them comma separated, e.g. >,= for two fields if which the first shall be
-     *            greater, the second equal to the respective values. If more matching values are
-     *            provided, than conditions, the last condition is taken for all extra matching
-     *            fields.
+     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get every record
+     *            or set "NULL" to get all records with the value being NULL. Set "IN" with the value being
+     *            the appropraite formatted array String to get values matching the given array. You can use a
+     *            condition for each matching field, if so wished, by listing them comma separated, e.g. >,=
+     *            for two fields if which the first shall be greater, the second equal to the respective
+     *            values. If more matching values are provided, than conditions, the last condition is taken
+     *            for all extra matching fields.
      * @param String $sort_key
-     *            the name of the column to sort for. Set "" (previous versions: false, may also
-     *            work) to do no sorting. Can be a list, comma separated. Precede by a '#' to sort
-     *            as numbers, e.g. "#EntryId".
+     *            the name of the column to sort for. Set "" (previous versions: false, may also work) to do
+     *            no sorting. Can be a list, comma separated. Precede by a '#' to sort as numbers, e.g.
+     *            "#EntryId".
      * @param bool $sort_ascending
      *            set to true to sort in ascending order, false to sort in descending order.
      * @param bool $start_row
-     *            (default = 0) set a value > 0 to start not with the first row. Use it for getting
-     *            chunks rather than all.
-     * @return array of records, each being an array of key = column name and value = value. False
-     *         in case of either connection error or no match. Values are UTF8 encoded.
+     *            (default = 0) set a value > 0 to start not with the first row. Use it for getting chunks
+     *            rather than all.
+     * @return array of records, each being an array of key = column name and value = value. False in case of
+     *         either connection error or no match. Values are UTF8 encoded.
      */
     public function find_records_sorted_matched (String $table_name, array $matching, int $max_rows, 
             String $condition, String $sort_key, bool $sort_ascending, int $start_row = 0)
@@ -915,8 +923,8 @@ class Tfyh_socket
         else
             $col_indicators = substr($col_indicators, 0, strlen($col_indicators) - 2);
         // compile command parts: rows to choose
-        $where_string = (strlen($condition) == 0) ? 'WHERE 1 ' : $this->clause_for_wherekeyis(
-                $table_name, $matching, $condition);
+        $where_string = (strlen($condition) == 0) ? 'WHERE 1 ' : $this->clause_for_wherekeyis($table_name, 
+                $matching, $condition);
         // compile command parts: sorting of result
         $sort_str = "";
         if ($sort_key && strlen($sort_key) > 0) {
@@ -925,8 +933,8 @@ class Tfyh_socket
             $sort_str = " ORDER BY ";
             foreach ($sort_cols as $sort_col) {
                 if (substr($sort_col, 0, 1) == '#')
-                    $sort_str .= "CAST(`" . $table_name . "`.`" . substr($sort_col, 1) .
-                             "` AS UNSIGNED) " . $sort_way . ", ";
+                    $sort_str .= "CAST(`" . $table_name . "`.`" . substr($sort_col, 1) . "` AS UNSIGNED) " .
+                             $sort_way . ", ";
                 else
                     $sort_str .= "`" . $table_name . "`.`" . $sort_col . "` " . $sort_way . ", ";
             }
@@ -936,27 +944,9 @@ class Tfyh_socket
         $limit_string = " LIMIT " . $start_row . "," . $max_rows;
         
         // compile command and execute
-        $sql_cmd = "SELECT " . $col_indicators . " FROM `" . $table_name . "` " . $where_string .
-                 $sort_str . $limit_string;
-        if ($this->debug_on)
-            file_put_contents($this->sql_debug_file, 
-                    date("Y-m-d H:i:s") . ": [tfyh_socket->find_records_sorted_matched] " . $sql_cmd .
-                             "\n", FILE_APPEND);
-        
-        $this->last_sql_executed = $sql_cmd;
-        if ($this->debug_on) {
-            file_put_contents($this->sql_debug_file, date("Y-m-d H:i:s") . ": " . $sql_cmd . " => ", 
-                    FILE_APPEND);
-        }
-        // retrieve data from data base
-        $res = $this->mysqli->query($sql_cmd);
-        if ($this->debug_on) {
-            if ($res === false)
-                file_put_contents($this->sql_debug_file, "failed: " . $this->mysqli->error . "\n", 
-                        FILE_APPEND);
-            else
-                file_put_contents($this->sql_debug_file, "successful.\n", FILE_APPEND);
-        }
+        $sql_cmd = "SELECT " . $col_indicators . " FROM `" . $table_name . "` " . $where_string . $sort_str .
+                 $limit_string;
+        $res = $this->mysqli_query($sql_cmd, "find_records_sorted_matched");
         $rows = [];
         $n_rows = 0;
         if (isset($res) && ($res !== false) && (intval($res->num_rows) > 0)) {
@@ -982,19 +972,18 @@ class Tfyh_socket
 
     /**
      * Count the number of records within a table
-     *
+     * 
      * @param String $tablename
      *            the table to look into
      * @param array $matching
-     *            the key to be matched. It may contain one or more fields. Values must be PHP
-     *            native encoded Strings. Set to null or omit to get all.
+     *            the key to be matched. It may contain one or more fields. Values must be PHP native encoded
+     *            Strings. Set to null or omit to get all.
      * @param String $condition
-     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get
-     *            every record. You can use a condition for each matching field, if so wisched, by
-     *            listing them comma separated, e.g. >,= for two fields if which the first shall be
-     *            greater, the second equal to the respective values. If more matching values are
-     *            provided, than conditions, the last condition is taken for all extra matching
-     *            fields. Ignored if $matching == null.
+     *            the condition for $key and $value, e. g. "!=" for not equal. Set to "" to get every record.
+     *            You can use a condition for each matching field, if so wisched, by listing them comma
+     *            separated, e.g. >,= for two fields if which the first shall be greater, the second equal to
+     *            the respective values. If more matching values are provided, than conditions, the last
+     *            condition is taken for all extra matching fields. Ignored if $matching == null.
      * @return int the count of records in the table
      */
     public function count_records (String $tablename, array $matching = null, String $condition = "")
@@ -1003,7 +992,7 @@ class Tfyh_socket
         $sql_cmd = ($matching == null) ? "SELECT COUNT(*) FROM `" . $tablename . "`;" : "SELECT COUNT(*) FROM `" .
                  $tablename . "` " . $this->clause_for_wherekeyis($tablename, $matching, $condition);
         $this->last_sql_executed = $sql_cmd;
-        $res = $this->mysqli->query($sql_cmd);
+        $res = $this->mysqli_query($sql_cmd, "count_records");
         $count = 0;
         if (is_object($res) && intval($res->num_rows) > 0) {
             $row = $res->fetch_row();
@@ -1014,7 +1003,7 @@ class Tfyh_socket
 
     /**
      * Count the frequencs of different values within a table column (like one column pivoting).
-     *
+     * 
      * @param String $tablename
      *            the table to look into
      * @param String $column
@@ -1026,7 +1015,7 @@ class Tfyh_socket
         // now retrieve all column names
         $sql_cmd = "SELECT `" . $columnname . "`, COUNT(`" . $columnname . "`) FROM `" . $tablename .
                  "` GROUP BY `" . $columnname . "`;";
-        $res = $this->mysqli->query($sql_cmd);
+        $res = $this->mysqli_query($sql_cmd, "count_values");
         $ret = [];
         if (is_object($res) && intval($res->num_rows) > 0) {
             $row = $res->fetch_row();
@@ -1046,7 +1035,7 @@ class Tfyh_socket
     
     /**
      * Get a table as csv String.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @return the full table as csv String
@@ -1067,37 +1056,39 @@ class Tfyh_socket
             $col_indicators .= "`" . $col_name . "`, ";
         $col_indicators = substr($col_indicators, 0, strlen($col_indicators) - 2);
         $sql_cmd = "SELECT " . $col_indicators . " FROM `" . $table_name . "` WHERE 1";
-        $res = $this->mysqli->query($sql_cmd);
-        $row = $res->fetch_row();
-        while ($row) {
-            // the fetch_row function is an iterator, returning an array with
-            // the table name always being at pos 0
-            $entries = 0;
-            foreach ($row as $entry) {
-                if ((strpos($entry, ";") !== false) || (strpos($entry, '"') !== false))
-                    $entry = '"' . str_replace('"', '""', $entry) . '"';
-                $csv .= $entry . ";";
-                $entries ++;
-            }
-            if ($entries > 0)
-                $csv = substr($csv, 0, strlen($csv) - 1);
-            $csv .= "\n";
+        $res = $this->mysqli_query($sql_cmd, "get_table_as_csv");
+        if ($res !== false) {
             $row = $res->fetch_row();
+            while ($row) {
+                // the fetch_row function is an iterator, returning an array with
+                // the table name always being at pos 0
+                $entries = 0;
+                foreach ($row as $entry) {
+                    if ((strpos($entry, ";") !== false) || (strpos($entry, '"') !== false))
+                        $entry = '"' . str_replace('"', '""', $entry) . '"';
+                    $csv .= $entry . ";";
+                    $entries ++;
+                }
+                if ($entries > 0)
+                    $csv = substr($csv, 0, strlen($csv) - 1);
+                $csv .= "\n";
+                $row = $res->fetch_row();
+            }
+            $res->free();
         }
-        $res->free();
         return $csv;
     }
 
     /**
      * Get a table as PHP array.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param String $filter_and_order
-     *            a String which will be added to the SQL statement containing the WHERE and ORDER
-     *            BY clauses, e.g. "WHERE 1 ORDER BY `Funktionen`.`efaCloudUserID` DESC".
-     * @return the full table as array of rows, each row being an array of $entries as $key =>
-     *         $value with $key being the respective column name.
+     *            a String which will be added to the SQL statement containing the WHERE and ORDER BY clauses,
+     *            e.g. "WHERE 1 ORDER BY `Funktionen`.`efaCloudUserID` DESC".
+     * @return the full table as array of rows, each row being an array of $entries as $key => $value with
+     *         $key being the respective column name.
      */
     public function get_table_as_array (String $table_name, String $filter_and_order)
     {
@@ -1114,54 +1105,53 @@ class Tfyh_socket
             $col_indicators .= "`" . $col_name . "`, ";
         $col_indicators = substr($col_indicators, 0, strlen($col_indicators) - 2);
         $sql_cmd = "SELECT " . $col_indicators . " FROM " . $table_name . " " . $filter_and_order;
-        $res = $this->mysqli->query($sql_cmd);
-        $row = $res->fetch_row();
+        $res = $this->mysqli_query($sql_cmd, "get_table_as_array");
         $rows = [];
-        while ($row) {
-            // the fetch_row function is an iterator, returning an array with
-            // the table name always being at pos 0
-            $entries = [];
-            $c = 0;
-            foreach ($row as $entry) {
-                $entries[$header[$c]] = $entry;
-                $c ++;
-            }
-            $rows[] = $entries;
+        if ($res !== false) {
             $row = $res->fetch_row();
+            while ($row) {
+                // the fetch_row function is an iterator, returning an array with
+                // the table name always being at pos 0
+                $entries = [];
+                $c = 0;
+                foreach ($row as $entry) {
+                    $entries[$header[$c]] = $entry;
+                    $c ++;
+                }
+                $rows[] = $entries;
+                $row = $res->fetch_row();
+            }
+            $res->free();
         }
-        $res->free();
         return $rows;
     }
 
     /**
-     * Import a csv file into a table or delete table records (provide single column csv with IDs
-     * only). The csv-file must use the ';' separator and '"' text delimiters. It must contain a
-     * headline with column names that are literally identical to the mySQL internal column names.
-     * All data records must be of the same length as the header line, not more, not less. If a data
-     * record does not comply, it will not be imported. The first column must be 'ID'. If this is
-     * not the case, no data will be imported at all. For data records with an existing 'ID' all
-     * provided record fields will be replaced, i. e. data will be deleted, if the respective field
-     * is empty. For data records with an empty 'ID' the 'ID' will be auto generated. In this case,
-     * and if the provided 'ID' is not yet existing, a new table record is inserted into the table.
-     * All changes will be logged, as if they had been made manually.
-     *
+     * Import a csv file into a table or delete table records (provide single column csv with IDs only). The
+     * csv-file must use the ';' separator and '"' text delimiters. It must contain a headline with column
+     * names that are literally identical to the mySQL internal column names. All data records must be of the
+     * same length as the header line, not more, not less. If a data record does not comply, it will not be
+     * imported. The first column must be 'ID'. If this is not the case, no data will be imported at all. For
+     * data records with an existing 'ID' all provided record fields will be replaced, i. e. data will be
+     * deleted, if the respective field is empty. For data records with an empty 'ID' the 'ID' will be auto
+     * generated. In this case, and if the provided 'ID' is not yet existing, a new table record is inserted
+     * into the table. All changes will be logged, as if they had been made manually.
+     * 
      * @param String $appUserID
      *            the ueser ID of the user who performs the statement. For change logging.
      * @param String $table_name
-     *            name of table into which the data shal be loaded. Must be exactly a name of a
-     *            database table.
+     *            name of table into which the data shal be loaded. Must be exactly a name of a database
+     *            table.
      * @param String $csv_file_path
-     *            path to file to be imported or to single column list of IDs which shall be
-     *            deleted.
+     *            path to file to be imported or to single column list of IDs which shall be deleted.
      * @param bool $verify_only
      *            set true to only see what would be done
      * @param String $idname
-     *            Optional, default = "ID". Set it to the field name of the ID to use for
-     *            comparison.
+     *            Optional, default = "ID". Set it to the field name of the ID to use for comparison.
      * @return array the import result
      */
-    public function import_table_from_csv (String $appUserID, String $table_name, 
-            String $csv_file_path, bool $verify_only, String $idname = "ID")
+    public function import_table_from_csv (String $appUserID, String $table_name, String $csv_file_path, 
+            bool $verify_only, String $idname = "ID")
     {
         // read table
         $table_read = $this->toolbox->read_csv_array($csv_file_path);
@@ -1200,10 +1190,9 @@ class Tfyh_socket
             $id = $record[$idname];
             if ($update_record && ! $delete_entries) {
                 // check whether ID exists
-                $sql_cmd = "SELECT * FROM `" . $table_name . "` WHERE `" . $idname . "` = '" . $id .
-                         "'";
-                $res = $this->mysqli->query($sql_cmd);
-                $update_record = intval($res->num_rows) > 0;
+                $sql_cmd = "SELECT * FROM `" . $table_name . "` WHERE `" . $idname . "` = '" . $id . "'";
+                $res = $this->mysqli_query($sql_cmd, "import_table_from_csv");
+                $update_record = ($res !== false) && (intval($res->num_rows) > 0);
                 if ($update_record) {
                     // update record now
                     $result .= "Update " . $idname . " " . $id . " mit: ";
@@ -1271,7 +1260,7 @@ class Tfyh_socket
     
     /**
      * Simple getter
-     *
+     * 
      * @return data base name
      */
     public function get_db_name ()
@@ -1281,18 +1270,18 @@ class Tfyh_socket
 
     /**
      * Simple getter
-     *
+     * 
      * @return data base server version
      */
     public function get_server_info ()
     {
-        return "Client info = " . $this->mysqli->client_info . ", Server info = " .
-                 $this->mysqli->server_info . ", Server version = " . $this->mysqli->server_version;
+        return "Client info = " . $this->mysqli->client_info . ", Server info = " . $this->mysqli->server_info .
+                 ", Server version = " . $this->mysqli->server_version;
     }
 
     /**
      * Get all column names by ordinal position as array with $array[n] = n. column's name.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @return array of column names or false, if data base connection fails.
@@ -1301,14 +1290,13 @@ class Tfyh_socket
     {
         // Retrieve all column names
         $sql_cmd = "SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='" .
-                 $this->db_name . "' AND `TABLE_NAME`='" . $table_name .
-                 "' ORDER BY ORDINAL_POSITION";
+                 $this->db_name . "' AND `TABLE_NAME`='" . $table_name . "' ORDER BY ORDINAL_POSITION";
         
-        $result = $this->mysqli->query($sql_cmd);
-        // put all values to the array, with numeric autoincrementing key.
+        $result = $this->mysqli_query($sql_cmd, "get_column_names");
         $ret = [];
         if (! is_array($result) && ! is_object($result))
             return $ret;
+        // put all values to the array, with numeric autoincrementing key.
         $column_names = $result->fetch_array();
         while ($column_names) {
             // the fetch_array function is an iterator, returning an array with
@@ -1322,26 +1310,26 @@ class Tfyh_socket
 
     /**
      * Get all column types by ordinal position as array with $array[n] = n. column's type.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
-     * @return array numbered array of column types including size (if not 0) like varchar(192) or
-     *         false, if data base connection fails.
+     * @return array numbered array of column types including size (if not 0) like varchar(192) or false, if
+     *         data base connection fails.
      */
     public function get_column_types (String $table_name)
     {
         // now retrieve all column names
         $sql_cmd = "SELECT `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='" .
-                 $this->db_name . "' AND `TABLE_NAME`='" . $table_name .
-                 "' ORDER BY ORDINAL_POSITION";
-        $res = $this->mysqli->query($sql_cmd);
-        // put all values to the array, with numeric autoincrementing key.
+                 $this->db_name . "' AND `TABLE_NAME`='" . $table_name . "' ORDER BY ORDINAL_POSITION";
+        $res = $this->mysqli_query($sql_cmd, "get_column_types");
         $ret = [];
+        if (! is_array($res) && ! is_object($res))
+            return $ret;
+        // put all values to the array, with numeric autoincrementing key.
         $column_types = $res->fetch_array();
         while ($column_types) {
             // the fetch_array function is an iterator
-            $ret[] = (strlen($column_types[1]) > 0) ? $column_types[0] . " (" . $column_types[1] .
-                     ")" : $column_types[0];
+            $ret[] = (strlen($column_types[1]) > 0) ? $column_types[0] . " (" . $column_types[1] . ")" : $column_types[0];
             $column_types = $res->fetch_array();
         }
         return $ret;
@@ -1349,12 +1337,12 @@ class Tfyh_socket
 
     /**
      * Get all indexes as array with $array[column_name] = index description.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      * @param bool $include_description
-     *            set true to return the indexes as associative array, name => description, false to
-     *            get a String array of the indexed column names.
+     *            set true to return the indexes as associative array, name => description, false to get a
+     *            String array of the indexed column names.
      * @return array of indexes or false, if data base connection fails.
      */
     public function get_indexes (String $table_name, bool $include_description)
@@ -1364,14 +1352,15 @@ class Tfyh_socket
                          "Sub_part,Packed,Null,Index_type,Comment,Index_comment,Visible,Expression");
         $sql_cmd = "SHOW KEYS FROM " . $table_name;
         $indexes = [];
-        $res = $this->query($sql_cmd);
-        if (($res != false) && ($res->num_rows > 0)) {
+        $res = $this->mysqli_query($sql_cmd, "get_indexes");
+        if (! is_array($res) && ! is_object($res))
+            return $indexes;
+        if ($res->num_rows > 0) {
             $row = $res->fetch_row();
             while ($row) {
                 $c = 0;
                 foreach ($index_response_columns as $index_response_column) {
-                    if (strpos(",Non_unique,Key_name,Column_name,Null", 
-                            $index_response_column . ",") !== false) {
+                    if (strpos(",Non_unique,Key_name,Column_name,Null", $index_response_column . ",") !== false) {
                         $index[$index_response_column] = $row[$c];
                     }
                     $c ++;
@@ -1393,20 +1382,21 @@ class Tfyh_socket
 
     /**
      * Get all indexes as array with $array[column_name] = index description.
-     *
+     * 
      * @param String $table_name
      *            the name of the table to be used.
      */
     public function get_autoincrements (String $table_name)
     {
         // SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'efaCloudUsers' AND EXTRA
-        // like
-        // '%auto_increment%'
+        // LIKE '%auto_increment%'
         $sql_cmd = "SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" . $table_name .
-                 "' AND EXTRA like '%auto_increment%'";
+                 "' AND EXTRA LIKE '%auto_increment%'";
         $autoincrements = [];
-        $res = $this->query($sql_cmd);
-        if (($res != false) && ($res->num_rows > 0)) {
+        $res = $this->mysqli_query($sql_cmd, "get_autoincrements");
+        if (! is_array($res) && ! is_object($res))
+            return $autoincrements;
+        if ($res->num_rows > 0) {
             $row = $res->fetch_row();
             while ($row) {
                 $autoincrements[$row[3]] = $row[15] . ", " . $row[16] . ", " . $row[18];
@@ -1418,14 +1408,14 @@ class Tfyh_socket
 
     /**
      * Get all available table names.
-     *
+     * 
      * @return array of table names or false, if data base connection fails.
      */
     public function get_table_names ()
     {
         $sql_cmd = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' " .
                  "AND TABLE_SCHEMA='" . $this->db_name . "' ";
-        $res = $this->mysqli->query($sql_cmd);
+        $res = $this->mysqli_query($sql_cmd, "get_table_names");
         // put all values to the array, the column name being the key.
         $ret = [];
         $row = $res->fetch_row();
@@ -1440,9 +1430,9 @@ class Tfyh_socket
     }
 
     /**
-     * Get all versions of a history entry by splitting it into lines and combining those lines,
-     * which end within a quoted entry.
-     *
+     * Get all versions of a history entry by splitting it into lines and combining those lines, which end
+     * within a quoted entry.
+     * 
      * @param String $record_history
      *            The record history entry
      * @return array[] all the versions decoded.
@@ -1468,9 +1458,8 @@ class Tfyh_socket
     }
 
     /**
-     * Parse a history String and return the record history as html tables, each version being a
-     * table.
-     *
+     * Parse a history String and return the record history as html tables, each version being a table.
+     * 
      * @param String $record_history
      *            The record history String.
      */
@@ -1505,11 +1494,9 @@ class Tfyh_socket
                     if (strlen($key_n_value[1]) > 0) {
                         if (strcmp($key_n_value[1], $last_record_version[$key_n_value[0]]) != 0) {
                             $lmod_string = (strcasecmp("LastModified", $key_n_value[0]) == 0) ? " [" .
-                                     date("d.m.Y H:i:s", intval(substr($key_n_value[1], 0, 10))) .
-                                     "]" : "";
+                                     date("d.m.Y H:i:s", intval(substr($key_n_value[1], 0, 10))) . "]" : "";
                             $version_html .= "<tr><td>" . $key_n_value[0] . "</td><td>" .
-                                     str_replace("\n", "<br>", $key_n_value[1]) . $lmod_string .
-                                     "</td></tr>\n";
+                                     str_replace("\n", "<br>", $key_n_value[1]) . $lmod_string . "</td></tr>\n";
                         }
                     }
                 }
