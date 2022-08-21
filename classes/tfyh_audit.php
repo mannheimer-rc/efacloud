@@ -51,13 +51,14 @@ class Tfyh_audit
         $audit_log .= "Forbidden directories access check ...\n";
         $changed = 0;
         foreach ($forbidden_dirs as $forbidden_dir) {
-            if (fileperms("../" . $forbidden_dir) != 0700) {
+            $forbidden_dir = trim($forbidden_dir); // line breaks in settings_tfyh may cause blank insertion
+            if (file_exists("../" . $forbidden_dir) && (fileperms("../" . $forbidden_dir) != 0700)) {
                 $audit_log .= "    file permissons for " . $forbidden_dir . ": " .
                          $this->permissions_string(fileperms("../" . $forbidden_dir)) . ".\n";
                 chmod("../" . $forbidden_dir, 0700);
             }
             $htaccess_filename = "../" . $forbidden_dir . "/.htaccess";
-            if (! file_exists($htaccess_filename)) {
+            if (file_exists("../" . $forbidden_dir) && ! file_exists($htaccess_filename)) {
                 $changed ++;
                 file_put_contents($htaccess_filename, "deny for all");
                 $audit_warnings = "    Missing " . $htaccess_filename . " added.\n";

@@ -46,7 +46,6 @@ class Tfyh_xml
      */
     public function __construct (Tfyh_toolbox $toolbox = null)
     {
-        // echo "Tfyh_xml::__construct().<br>";
         include_once "../classes/tfyh_xml_tag.php";
         $this->toolbox = $toolbox;
     }
@@ -129,8 +128,10 @@ class Tfyh_xml
         // read tree recursivly from root.
         $this->ctag = $this->xml_tree;
         $i = 0;
-        flush();
-        ob_flush();
+        if ($echo) {
+            flush();
+            ob_flush();
+        }
         do {
             // read the tag
             $tag = $this->read_next_tag();
@@ -151,10 +152,11 @@ class Tfyh_xml
                 // provide some progress output.
                 $i ++;
                 if (($i % 5000) == 0) {
-                    if ($echo)
+                    if ($echo) {
                         echo ".";
-                    flush();
-                    ob_flush();
+                        flush();
+                        ob_flush();
+                    }
                 }
             }
         } while ($tag !== false);

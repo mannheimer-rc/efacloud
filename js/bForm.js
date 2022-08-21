@@ -1,3 +1,9 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
 var bForm = {
 
     formName : "",
@@ -37,9 +43,9 @@ var bForm = {
         this.formErrors = "";
 
         if (index == 1) {
-        	formConfig = bToolbox.readCsvList($_formTemplates[formName]);
+        	formConfig = cToolbox.readCsvList($_formTemplates[formName]);
         } else {
-        	formConfig = bToolbox.readCsvList($_formTemplates[formName] + "_" + index);
+        	formConfig = cToolbox.readCsvList($_formTemplates[formName] + "_" + index);
         }
         
         // in order to be able to reference the field definition by its name,
@@ -81,28 +87,18 @@ var bForm = {
 	 * numeric size definitions by 'em' as unit.
 	 */
     _readOptions:function(fieldDefinition) {
-        if (fieldDefinition["type"].trim().toLowerCase().localeCompare("select use:") == 0) {
+        if (fieldDefinition["type"].trim().toLowerCase().indexOf("select use:") == 0) {
             // use a select parameter as defined in the parameters table
             lookup = fieldDefinition["type"].trim().split(":");
             parameter_name = (lookup.length == 2) ? lookup[1] : "select use syntax error in form definition.";
-            options_list = rTables.find_record("Parameter", "Name", parameter_name);
-            if (options_list) {
-                values = $options_list["Wert"].split(",");
-                select_string = "select ";
-                for (value in $values)
-                    select_string += $value + "=" + $value + ";";
-                    fieldDefinition["type"] = select_string.substring(0, select_string.length - 1);
-            } else {
-                fieldDefinition["type"] = "select config_error=config_error";
+            options = $_params[parameter_name];
+            select_string = "";
+            for (option in options) {
+                select_string += option + "=" + options[option] + ";";
             }
-        } else if (fieldDefinition["type"].trim().toLowerCase().localeCompare("select list:") == 0)  {
-            // select from a list of lists
-            lookup = fieldDefinition["type"].trim().split(":");
-            if (count($lookup) == 2) {
-            	// TODO
-            } else {
-                $fieldDefinition["type"] = "select config_error=config_error";
-            }
+            if (select_string.length == 0)
+                fieldDefinition["type"] = "config_error=config_error;";
+            fieldDefinition["type"] = "select " + select_string.substring(0, select_string.length - 1);
         }
         // add unit "em" if size has no unit. For textarea this is in maxlength.
         if (fieldDefinition["size"] && parseInt(fieldDefinition["size"]).toString()
@@ -183,7 +179,7 @@ var bForm = {
         	// now provide the field. Wrap with htmlSpecialChars to prevent from
 			// XSS
         	// https://stackoverflow.com/questions/1996122/how-to-prevent-xss-with-html-php
-        	var preset = bToolbox.escapeHtml(this.inputs[f["name"]]);
+        	var preset = cToolbox.escapeHtml(this.inputs[f["name"]]);
         	if (! preset && f["value"]) {
         		if (f["value"].indexOf("\$now") == 0) {
         			var d = new Date();
@@ -339,7 +335,7 @@ var bForm = {
         			value = value.replace(/`/g, "\u{055A}").replace(/</g, "\u{227A}").replace(/>/g, "\u{227B}")
         					.replace(/;/g, "\u{037E}");
         		if (this._isDate(f))
-        			this.inputs[f["name"]] = bToolbox.checkAndFormatDate(value);
+        			this.inputs[f["name"]] = cToolbox.checkAndFormatDate(value);
         		else if (this._isField(f))
         			this.inputs[f["name"]] = value;
         	}
@@ -464,14 +460,14 @@ var bForm = {
                             this.validities[key] = false;
                         }
                     } else if (type.localeCompare("date") == 0) {
-                        if (bToolbox.checkAndFormatDate(value) == false) {
+                        if (cToolbox.checkAndFormatDate(value) == false) {
                             formErrors += 'Bitte bei "' + definition["label"] +
                                          '" eine gültiges Datum eingeben (nicht "' + $value +
                                          '")<br>';
                             this.validities[key] = false;
                         }
                     } else if ((type.localeCompare("password") == 0) && (password_rule > 0)) {
-                        errors = bToolbox.checkPassword(value);
+                        errors = cToolbox.checkPassword(value);
                         if (errors.length > 0) {
                             formErrors += 'Das Passwort ist nicht ausreichend sicher in "' +
                                     definition["label"] + '" ' + errors + '<br>';

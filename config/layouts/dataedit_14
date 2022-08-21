@@ -1,0 +1,39 @@
+tags;required;name;value;label;type;class;size;maxlength
+
+<div class='w3-row'><div class='w3-col l2'>;;;FirstName;text;;20;50
+</div><div class='w3-col l2'>;;LastName;;LastName;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;FirstLastName;;FirstLastName;text;;20;50
+</div><div class='w3-col l2'>;;NameAffix;;NameAffix;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Title;;Title;text;;20;50
+</div><div class='w3-col l2'>;;Gender;;Gender;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Birthday;;Birthday;text;;20;50
+</div><div class='w3-col l2'>;;Association;;Association;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;StatusId;;StatusId;select list:dataeditSelect:4+;;20;50
+</div><div class='w3-col l2'>;;AddressStreet;;AddressStreet;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;AddressAdditional;;AddressAdditional;text;;20;50
+</div><div class='w3-col l2'>;;AddressCity;;AddressCity;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;AddressZip;;AddressZip;text;;20;50
+</div><div class='w3-col l2'>;;AddressCountry;;AddressCountry;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Email;;Email;text;;20;50
+</div><div class='w3-col l2'>;;MembershipNo;;MembershipNo;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Password;;Password;text;;20;50
+</div><div class='w3-col l2'>;;ExternalId;;ExternalId;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Disability;;Disability;checkbox;;;
+</div><div class='w3-col l2'>;;ExcludeFromStatistics;;ExcludeFromStatistics;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;ExcludeFromCompetition;;ExcludeFromCompetition;checkbox;;;
+</div><div class='w3-col l2'>;;ExcludeFromClubwork;;ExcludeFromClubwork;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;BoatUsageBan;;BoatUsageBan;checkbox;;;
+</div><div class='w3-col l2'>;;InputShortcut;;InputShortcut;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DefaultBoatId;;DefaultBoatId;text;;20;50
+</div><div class='w3-col l2'>;;FreeUse1;;FreeUse1;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;FreeUse2;;FreeUse2;text;;20;50
+</div><div class='w3-col l2'>;;FreeUse3;;FreeUse3;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;EfbId;;EfbId;text;;20;50
+</div><div class='w3-col l2'>;;InvalidFrom;9223372036854775807;InvalidFrom;text;;18;30
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Invisible;;Invisible;checkbox;;;
+</div><div class='w3-col l2'>;;Deleted;;Deleted;checkbox;;;
+
+</div></div><div class='w3-row'><div class='w3-col l1'> <br>;;submit;Jetzt ändern;;submit;formbutton;;
+</div></div>;;_no_input;;;;;;
+<li><span class='helptext'>;;_help_text;;Die Datenänderung wirkt im efaCloud Server sofort, in angebundenen efa-PCs erst nach der nächsten Synchronisation.;;;;
+</span></li>;;_help_text;;;;;;

@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * a set of global variables to be used within the application.
  */
 
@@ -7,13 +13,16 @@ var $_GET = [];
 // the URL selected
 var $_URL = "";
 
-let cookie = document.cookie;
-var elements = cookie.split(/;/g);
+// User und session DI are transferred via a cookie, not within the document, for security reasons 
+let docCookie = document.cookie;
+var elements = docCookie.split(/;/g);
 var $_COOKIE = {};
 for (element of elements) 
 	$_COOKIE[element.trim().split("=")[0]] = element.trim().split("=")[1];
 var $_efaCloudUserID = $_COOKIE["tfyhUserID"];
 var $_efaCloudSessionID = $_COOKIE["tfyhSessionID"];
+
+// Create menu based access logic.
 var $_allowedMenuItems = [];
 $(".menuitem").each(function() {
 	var thisElement = $(this);   // for debugging: do not inline statement.
@@ -21,7 +30,6 @@ $(".menuitem").each(function() {
 	if (id && (id.substring(0, 3).localeCompare("do-") == 0))
 		$_allowedMenuItems.push(id.substring(3));
 });
-
 
 // interface URL
 const $_clientInterfaceURI = "../api/posttx.php";
@@ -92,9 +100,6 @@ const $_dateFormatDayShort = {
 };
 
 var $_initTime = new Date();
-var current_logbook_element = $('.current-logbook')[0];
-var current_logbook = $(current_logbook_element).attr('id');
-var $_logbookname = (current_logbook) ? current_logbook : "" + $_initTime.getFullYear();
 
 var $_version;
 jQuery.get('../public/version', function(data) {

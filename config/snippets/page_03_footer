@@ -2,7 +2,21 @@
   <!-- End page content -->
 </div>
 
+    <!-- jQuery framework, smaller version for speed reasons -->
+    <script src="../js/jQuery_3.3.1.js"></script>
+
+    <!-- application script code, generic parts -->
+    <script src="../js/cGlobals.js"></script>
+    <script src="../js/cToolbox.js"></script>
+    <script src="../js/cModal.js"></script>
+    <script src="../js/cHelp.js"></script>
+
+    <!-- efaCloud Scripts -->
+    <!-- ================ -->
+
     <!-- show and hide submenus Javascript -->
     <script src="../js/sMenu.js"></script>
+    <script src="../js/sEvents.js"></script>
+
 </body>
 </html>

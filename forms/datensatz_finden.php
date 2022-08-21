@@ -164,9 +164,9 @@ echo file_get_contents('../config/snippets/page_02_nav_to_body');
 ?>
 <!-- START OF content -->
 <div class="w3-container">
-	<h3>Einen Datensatz finden</h3>
+	<h3>Einen efa-Datensatz<sup class='eventitem' id='showhelptext_efaDaten'>&#9432</sup> finden</h3>
 	<p>Hier kannst Du einen efa-Datensatz unter Angabe der efa2-Tabelle und der zu
-		überprüfenden Spalte finden. Für die efaCloud-Tabellen nutze bitte die Verwaltuzngsfunktionen.</p>
+		überprüfenden Spalte finden. Für die efaCloud-Tabellen nutze bitte die efaCloud Nutzer Funktionen.</p>
 </div>
 
 <div class="w3-container">

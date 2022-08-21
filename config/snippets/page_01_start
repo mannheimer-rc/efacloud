@@ -19,4 +19,5 @@
   <div class="w3-container">
     <a href='../public/index.php'><img src="../resources/efacloud-logo_512.png" alt="efacloud Logo" 
             style="width:180px"></a>
+    <span id='clubname'></span>
   </div>

@@ -455,6 +455,11 @@ class Tx_handler
             // the result message neither nees utf-8 encoding (the values are already encoded) nor
             // csv encoding (the values are as well already approporiately quotes).
             $resp .= $result_message . self::$ems;
+            // log transaction for statistics
+            $now = time();
+            file_put_contents("../log/access_api_" . intval($now / 1000000), 
+                    $now . ";" . $efaCloudUserID . ";" . $this->txc["requests"][$i]["type"] . ";" .
+                             $this->txc["requests"][$i]["tablename"] . "\n", FILE_APPEND);
         }
         if (count($this->txc["requests"]) > 0)
             $resp = substr($resp, 0, strlen($resp) - strlen(self::$ems));
@@ -646,7 +651,7 @@ class Tx_handler
             file_put_contents("../log/lwa/" . strval($efaCloudUserID), strval(time()));
             // notification of new reservations, damages or admin messages
             include_once "../classes/efa_notifier.php";
-            $efa_notifier = New Efa_notifier($this->toolbox, $this->socket);
+            $efa_notifier = new Efa_notifier($this->toolbox, $this->socket);
             $efa_notifier->notify_api_write_event($this->txc["requests"][$index]);
         }
         if ($this->debug_on)
@@ -708,22 +713,9 @@ class Tx_handler
                         return "502;" . $upload_file_path . ": Failed to unzip archive. Nothing written.";
                 }
             }
-            // update cache for project configuration copy.
-            if (isset($this->toolbox->config->get_cfg()["ProjectCfgClientID"]) &&
-                     (intval($this->toolbox->config->get_cfg()["ProjectCfgClientID"]) ==
-                     intval($efaCloudUserID))) {
-                if (file_exists($upload_dir_path . "/types.efa2types")) {
-                    $types_xml = file_get_contents($upload_dir_path . "/types.efa2types");
-                    $this->efa_tables->types_xml2csv($types_xml);
-                }
-                $all_files = scandir($upload_dir_path);
-                foreach ($all_files as $file) {
-                    if (strpos($file, ".efa2project") > 0) {
-                        $project_xml = file_get_contents($upload_dir_path . "/" . $file);
-                        $this->efa_tables->project_xml2csv($project_xml);
-                    }
-                }
-            }
+            include_once "../classes/efa_config.php";
+            $efa_config = New Efa_config($this->toolbox);
+            $efa_config->xml_to_csv();
         } else
             return "502;" . $upload_file_path . ": Failed to decode contents. Nothing written.";
         return "300;" . $upload_file_path . ": " . $written_bytes_count . " Bytes written.";

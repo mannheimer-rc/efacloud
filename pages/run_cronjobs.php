@@ -12,7 +12,7 @@ include_once "../classes/init.php";
 include_once ("../classes/cron_jobs.php");
 unlink("../log/cronjobs_last_day");
 $cronlog_before = file_get_contents("../log/sys_cronjobs.log");
-Cron_jobs::run_daily_jobs($toolbox, $socket, $_SESSION["User"][$toolbox->users->user_id_field_name]);
+Cron_jobs::run_daily_jobs($toolbox, $socket, $_SESSION["User"][$toolbox->users->user_id_field_name], true);
 $cronlog_after = file_get_contents("../log/sys_cronjobs.log");
 $cronlog_this = substr($cronlog_after, strlen($cronlog_before));
 
@@ -24,7 +24,7 @@ echo file_get_contents('../config/snippets/page_02_nav_to_body');
 
 <!-- START OF content -->
 <div class="w3-container">
-	<h3>Die täglichen Routinen wurden durchgeführt.</h3>
+	<h3>Die täglichen Wartungroutinen<sup class='eventitem' id='showhelptext_Wartungsroutinen'>&#9432</sup> wurden durchgeführt.</h3>
 	<p>
 <?php
 echo str_replace("\n", "<br>", $cronlog_this);

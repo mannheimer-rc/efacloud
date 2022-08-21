@@ -1,0 +1,20 @@
+tags;required;name;value;label;type;class;size;maxlength
+
+<div class='w3-row'><div class='w3-col l2'>;;Name;;Name;text;;20;50
+</div><div class='w3-col l2'>;;Start;;Start;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;End;;End;text;;20;50
+</div><div class='w3-col l2'>;;StartIsBoathouse;;StartIsBoathouse;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Roundtrip;;Roundtrip;checkbox;;;
+</div><div class='w3-col l2'>;;DestinationAreas;;DestinationAreas;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;PassedLocks;;PassedLocks;text;;10;12
+</div><div class='w3-col l2'>;;Distance;;Distance;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;OnlyInBoathouseId;;OnlyInBoathouseId;text;;20;50
+</div><div class='w3-col l2'>;;WatersIdList;;WatersIdList;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;InvalidFrom;;InvalidFrom;text;;18;30
+</div><div class='w3-col l2'>;;Invisible;;Invisible;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Deleted;;Deleted;checkbox;;;
+
+</div></div><div class='w3-row'><div class='w3-col l1'> <br>;;submit;Jetzt ändern;;submit;formbutton;;
+</div></div>;;_no_input;;;;;;
+<li><span class='helptext'>;;_help_text;;Die Datenänderung wirkt im efaCloud Server sofort, in angebundenen efa-PCs erst nach der nächsten Synchronisation.;;;;
+</span></li>;;_help_text;;;;;;

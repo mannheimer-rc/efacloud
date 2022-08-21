@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * Queue of transaction requests for communication with efacloudServer. Compile
  * and send messages, asynchronously collect of responses or communication
  * errors, parse responses and hand-over the response or error to bTxHandler.
@@ -118,7 +124,7 @@ var bTxQueue = {
 	recordToPairs : function(record) {
 		var arrayToReturn = [];
 		for (key in record) {
-			arrayToReturn.push(bToolbox.encodeCsvEntry(key) + ";" + bToolbox.encodeCsvEntry("" + record[key]));
+			arrayToReturn.push(cToolbox.encodeCsvEntry(key) + ";" + cToolbox.encodeCsvEntry("" + record[key]));
 		}
 		return arrayToReturn;
 	},
@@ -243,7 +249,7 @@ var bTxQueue = {
 	 */
 	parseResponse : function(response) {
 
-		var plain = bToolbox.efaBase64toUtf8(response);  
+		var plain = cToolbox.efaBase64toUtf8(response);  
 		// javascript native atob doesn't work with UTF-8 Strings.
 		
 		var txc = Object.assign({}, bTxQueue.emptyContainer);

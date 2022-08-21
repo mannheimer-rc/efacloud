@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * Keep all lists received from efacloudServer up to date and provide their data
  * to the application. Lists will be read from and refreshed from the server and
  * kept in memory only.
@@ -390,7 +396,7 @@ var bLists = {
 		this.lists.efaWeb_logbook.forEach(function(row) {
 			lastTrips.push({
 				EntryId : row["EntryId"],
-				startAt : bToolbox.parseEfaDate(row["Date"], row["StartTime"])
+				startAt : cToolbox.parseEfaDate(row["Date"], row["StartTime"])
 						.valueOf(),
 				rpos : r
 			});
@@ -544,7 +550,7 @@ var bLists = {
 		if (!bLists.lists[listname])
 			bLists.lists[listname] = [];
 		// parse download result into associative array
-		var listRows = bToolbox.readCsvList(this.csvtables[listname].data);
+		var listRows = cToolbox.readCsvList(this.csvtables[listname].data);
 		listRows.forEach(function(row) {
 			var listNrow = bLists.indices.all_ecrids[row.ecrid];
 			// record is already existing: overwrite it.
@@ -562,6 +568,18 @@ var bLists = {
 		});
 		for (listUpdated of Object.keys(listsUpdated))
 			this._refreshList(listUpdated);
+	},
+
+	/**
+	 * load a csv list from the server, as is provided in dataedit forms.
+	 */
+	readCsv : function(tablename, csv) {
+		let listname = tablename;
+		bLists.csvtables[listname] = {};
+		bLists.csvtables[listname]["downloaded"] = Date.now();
+		bLists.csvtables[listname]["updated"] = 0;
+		bLists.csvtables[listname]["data"] = csv;
+		bLists.updateList(listname);
 	},
 
 	/**

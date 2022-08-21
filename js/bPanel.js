@@ -1,3 +1,9 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
 var bPanel = {
 
 	allBoatsStatus : {},
@@ -6,13 +12,13 @@ var bPanel = {
 	boatGroupHtml : '<div class="w3-bar-block"><span class="w3-bar-item boatitem menuitem" id="do-openBoatGroup_[cntOrStatus]">'
 			+ '[cntOrStatusText]&nbsp;<b>&#x25be</b></span></div>',
 	startTripHtml : '<div class="w3-bar-block w3-hide w3-medium boatGroup[cntOrStatus]">'
-			+ '<span class="w3-bar-item menuitem boatitem" id="do-getForm_startTrip_[boatId]">&nbsp;&nbsp;[boatName]</span></div>',
+			+ '<span class="w3-bar-item menuitem boatitem" id="do-getForm_startTrip_[boatId]">&nbsp;&nbsp;[boatName] ([boatType])</span></div>',
 	bookAboatHtml : '<div class="w3-bar-block w3-hide w3-medium boatGroup[cntOrStatus]">'
-			+ '<span class="w3-bar-item menuitem boatitem" id="do-getForm_bookAboat_[boatId]">&nbsp;&nbsp;[boatName]</span></div>',
+			+ '<span class="w3-bar-item menuitem boatitem" id="do-getForm_bookAboat_[boatId]">&nbsp;&nbsp;[boatName] ([boatType])</span></div>',
 	showAboatHtml : '<div class="w3-bar-block w3-hide w3-medium boatGroup[cntOrStatus]">'
-			+ '<span class="w3-bar-item">&nbsp;&nbsp;[boatName]</span></div>',
+			+ '<span class="w3-bar-item">&nbsp;&nbsp;[boatName] ([boatType])</span></div>',
 	showBoatDatasheetHtml : '<div class="w3-bar-block w3-hide w3-medium boatGroup[cntOrStatus]">'
-			+ '<span class="w3-bar-item menuitem boatitem" id="do-getDatasheet_boat_[boatId]">&nbsp;&nbsp;[boatName]</span></div>',
+			+ '<span class="w3-bar-item menuitem boatitem" id="do-getDatasheet_boat_[boatId]">&nbsp;&nbsp;[boatName] ([boatType])</span></div>',
 			
 	listpanelHeader : { 
 			logbook : "Fahrtenbuch " + $_logbookname,
@@ -80,31 +86,34 @@ var bPanel = {
 		}
 		// sort for 1. crewNcoxCnt, 2. Name
 		boatsToShow.sort(function(a, b) {
-			return 100 * (a["crewNcoxCnt"] - b["crewNcoxCnt"])
+			return 100 * (a["TypeSeats"].localeCompare(b["TypeSeats"]))
 					+ a["Name"].localeCompare(b["Name"]);
 		});
 		// build list.
-		var currentCoxNcrewCnt = -1;
+		// var currentCoxNcrewCnt = -1;
+		var currentTypeSeats = "";
 		var html = "";
 		var isAllowedStartTrip = isAllowedAction("getForm_startTrip");
 		var isAllowedBookAboat = isAllowedAction("getForm_bookAboat");
 		var actionForAvailable = (isAllowedStartTrip) ? this.startTripHtml : ((isAllowedBookAboat) ? this.bookAboatHtml : this.showAboatHtml); 
 		boatsToShow.forEach(function(boat) {
-			var cntOrStatusText = $_seatCntText[boat["crewNcoxCnt"]];
-			if (boat["crewNcoxCnt"] > 0) {
+			cntOrStatusText = bBoat.getSeatTypeText(boat);
+			if (cntOrStatusText) {
 				// show a headline on top of the boat
-				if (boat["crewNcoxCnt"] != currentCoxNcrewCnt) {
-					currentCoxNcrewCnt = boat["crewNcoxCnt"];
+				// if (boat["crewNcoxCnt"] != currentCoxNcrewCnt) {
+				if (boat["TypeSeats"].localeCompare(currentTypeSeats) !== 0) {
+					currentTypeSeats = boat["TypeSeats"];
 					html += bPanel.boatGroupHtml.replace(
 							/\[cntOrStatusText\]/g, cntOrStatusText).replace(
-							/\[cntOrStatus\]/g, boat["crewNcoxCnt"]);
+							/\[cntOrStatus\]/g, boat["TypeSeats"]);
 				}
 				bBoat.getNames(boat).forEach(
 						function(name) {
 							html += actionForAvailable.replace(
 									/\[boatName\]/g, name).replace(
+									/\[boatType\]/g, bBoat.getBoatTypeText(boat)).replace(
 									/\[boatId\]/g, name).replace(
-									/\[cntOrStatus\]/g, boat["crewNcoxCnt"]);
+									/\[cntOrStatus\]/g, boat["TypeSeats"]);
 						});
 			}
 		});
@@ -167,8 +176,9 @@ var bPanel = {
 				}
 				
 				html += bPanel.showBoatDatasheetHtml.replace(/\[boatId\]/g, boat.Id)
-						.replace(/\[boatName\]/g, boat.Name).replace(
-								/\[cntOrStatus\]/g, boat.statusToUseInPanel);
+						.replace(/\[boatName\]/g, boat.Name)
+						.replace(/\[boatType\]/g, bBoat.getBoatTypeText(boat))
+						.replace(/\[cntOrStatus\]/g, boat.statusToUseInPanel);
 			}
 		});
 		return html;
@@ -209,7 +219,7 @@ var bPanel = {
 			if (isAllowedAction("showList_logbook_50")) doAction("showList_logbook_50");
 			bindMenuEvents();
 		} catch (e) {
-			bModal.showException(e);
+			cModal.showException(e);
 		}
 	}
 

@@ -1,0 +1,44 @@
+tags;required;name;value;label;type;class;size;maxlength
+
+<div class='w3-row'><div class='w3-col l2'>;;Name;;Name;text;;20;50
+</div><div class='w3-col l2'>;;NameAffix;;NameAffix;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Owner;;Owner;text;;20;50
+</div><div class='w3-col l2'>;;LastVariant;;LastVariant;text;;10;12
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DefaultVariant;;DefaultVariant;text;;10;12
+</div><div class='w3-col l2'>;;TypeVariant;;TypeVariant;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;TypeDescription;;TypeDescription;textarea;;4;
+</div><div class='w3-col l2'>;;TypeType;;TypeType;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;TypeSeats;;TypeSeats;text;;20;50
+</div><div class='w3-col l2'>;;TypeRigging;;TypeRigging;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;TypeCoxing;;TypeCoxing;text;;20;50
+</div><div class='w3-col l2'>;;AllowedGroupIdList;;AllowedGroupIdList;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;MaxNotInGroup;;MaxNotInGroup;text;;10;12
+</div><div class='w3-col l2'>;;RequiredGroupId;;RequiredGroupId;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;OnlyWithBoatCaptain;;OnlyWithBoatCaptain;checkbox;;;
+</div><div class='w3-col l2'>;;Manufacturer;;Manufacturer;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Model;;Model;text;;20;50
+</div><div class='w3-col l2'>;;MaxCrewWeight;;MaxCrewWeight;text;;10;12
+</div></div><div class='w3-row'><div class='w3-col l2'>;;ManufactionDate;;ManufactionDate;date;;10;20
+</div><div class='w3-col l2'>;;SerialNo;;SerialNo;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;PurchaseDate;;PurchaseDate;date;;10;20
+</div><div class='w3-col l2'>;;PurchasePrice;;PurchasePrice;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;SellingDate;;SellingDate;date;;10;20
+</div><div class='w3-col l2'>;;SellingPrice;;SellingPrice;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;PurchasePriceCurrency;;PurchasePriceCurrency;text;;20;50
+</div><div class='w3-col l2'>;;InsuranceValue;;InsuranceValue;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DefaultCrewId;;DefaultCrewId;text;;20;50
+</div><div class='w3-col l2'>;;DefaultSessionType;;DefaultSessionType;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DefaultDestinationId;;DefaultDestinationId;text;;20;50
+</div><div class='w3-col l2'>;;ExcludeFromStatistics;;ExcludeFromStatistics;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;FreeUse1;;FreeUse1;text;;20;50
+</div><div class='w3-col l2'>;;FreeUse2;;FreeUse2;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;FreeUse3;;FreeUse3;text;;20;50
+</div><div class='w3-col l2'>;;EfbId;;EfbId;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;InvalidFrom;;InvalidFrom;text;;18;30
+</div><div class='w3-col l2'>;;Invisible;;Invisible;checkbox;;;
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Deleted;;Deleted;checkbox;;;
+
+</div></div><div class='w3-row'><div class='w3-col l1'> <br>;;submit;Jetzt ändern;;submit;formbutton;;
+</div></div>;;_no_input;;;;;;
+<li><span class='helptext'>;;_help_text;;Die Datenänderung wirkt im efaCloud Server sofort, in angebundenen efa-PCs erst nach der nächsten Synchronisation.;;;;
+</span></li>;;_help_text;;;;;;

@@ -14,7 +14,6 @@ $efa_tables = new Efa_tables($toolbox, $socket);
 include_once "../classes/efa_tools.php";
 $efa_tools = new Efa_tools($efa_tables, $toolbox);
 
-$cfg = $toolbox->config->get_cfg();
 include_once '../classes/efa_db_layout.php';
 
 // ===== Improve data base status, if requested
@@ -28,36 +27,40 @@ $set_missing_defaults = (isset($_GET["set_missing_defaults"]) &&
          strcasecmp($_GET["set_missing_defaults"], "yes") == 0);
 
 // maximum number of records which will be added an ecrid, if missing, in one go. Should never be hit.
-$max_add_ecrids = 2000;
+$max_add_ecrids = 1000;
 if ($do_improve) {
-    $efa_tools->upgrade_efa_tables(true);
+    $upgrade_success = $efa_tools->upgrade_efa_tables(true);
+    $improvements = ($upgrade_success) ? "<b>Fertig</b><br>Das Tabellenlayout wurde angepasst. " : "<b>Fehler</b><br>Das Tabellenlayout konnte nicht angepasst werden. Details siehe '../log/efa_tools.log'. ";
     $added_ecrids = $efa_tools->add_ecrids($max_add_ecrids);
-    $improvements = "<b>Fertig</b><br>Efa tables wurden aktualisiert" . (($added_ecrids > 0) ? " und " .
-             $added_ecrids . " Ids hinzugefügt. (Der Schritt aktualisiert maximal " . $max_add_ecrids .
+    $improvements .= (($added_ecrids > 0) ? $added_ecrids .
+             " ecrids wurden hinzugefügt. (Der Schritt aktualisiert maximal " . $max_add_ecrids .
              " Datensätze und muss ggf. wiederholt werden.)<br>" : ".");
-    $db_layout_read = Efa_db_layout::compare_db_layout($socket, 5);
+    $improvements .= "<br>";
+    $db_layout_read = Efa_db_layout::compare_db_layout($socket, $efa_tables->db_layout_version_target);
     if ($db_layout_read == $efa_tables->db_layout_version_target) {
-        $cfg["db_layout"] = $db_layout_read;
-        $settings_path = "../config/settings";
-        $cfgStr = serialize($cfg);
+        $cfg_db = $toolbox->config->get_cfg_db();
+        $cfg_db["db_layout_version"] = $db_layout_read;
+        $cfg_db["db_up"] = Tfyh_toolbox::swap_lchars($cfg_db["db_up"]);
+        $cfgStr = serialize($cfg_db);
         $cfgStrBase64 = base64_encode($cfgStr);
-        $byte_cnt = file_put_contents($settings_path . "_app", $cfgStrBase64);
-        $improvements .= 'Konfiguration wurde aktualisiert.<br>';
+        $byte_cnt = file_put_contents("../config/settings_db", $cfgStrBase64);
+        $improvements .= "Die Datenbank-Konfiguration wurde aktualisiert ($byte_cnt Bytes).<br>";
     }
     $improvements .= '<br>';
 }
 $optimization_needed = false;
 
 // ===== Configuration check
-$db_layout_read = Efa_db_layout::compare_db_layout($socket, 5);
+$db_layout_read = Efa_db_layout::compare_db_layout($socket, $efa_tables->db_layout_version_target);
 $db_layout_config = "<b>Ergebnis der Konfigurationsprüfung</b><ul>";
+// compare the current version. $efa_tables still remembers the version before improvement
 $layout_cfg_is_target = (intval($efa_tables->db_layout_version_target) ==
-         intval($efa_tables->db_layout_version));
+         intval($toolbox->config->get_cfg_db()["db_layout_version"]));
 $layout_read_is_target = (is_numeric($db_layout_read) &&
          ($efa_tables->db_layout_version_target == $db_layout_read));
 if ($layout_cfg_is_target && $layout_read_is_target) {
     $db_layout_config .= "<li>OK. " . "In Bestand und allen Konfigurationsparametern Layout Version " .
-             $cfg["db_layout"];
+            $efa_tables->db_layout_version_target;
 } else {
     $optimization_needed = true;
     $db_layout_config .= "<li>NICHT OK.</li><li>";
@@ -91,8 +94,9 @@ if ($db_layout_verified) {
              $efa_tables->db_layout_version_target . " überein.";
 } else {
     $optimization_needed = true;
-    $verification_result .= "NICHT OK.</li><li>" .
-             str_replace("\n", "</li><li>", file_get_contents("../log/sys_db_audit.log"));
+    $verification_result .= "NICHT OK.</li><li>" . str_replace("\n", "</li><li>", 
+            str_replace("Verification failed", "<b>Verification failed</b>", 
+                    file_get_contents("../log/sys_db_audit.log")));
 }
 $efa_tools->change_log_path("");
 $verification_result .= "</li></ul>";
@@ -135,9 +139,12 @@ echo file_get_contents('../config/snippets/page_01_start');
 echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
 ?>
+
 <!-- START OF content -->
 <div class="w3-container">
-	<h3>Audit für die Datenbank <?php echo $socket->get_db_name(); ?></h3>
+	<h3>Audit für die Datenbank <?php echo $socket->get_db_name(); ?><sup
+			class='eventitem' id='showhelptext_Audit'>&#9432</sup>
+	</h3>
 	<p>Hier das Ergebnis der Prüfung der Datenbank</p>
 	<?php
 echo $improvements;

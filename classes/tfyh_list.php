@@ -16,7 +16,8 @@ class Tfyh_list
 {
 
     /**
-     * Definition of all lists in configuration file. Will be read once upon construction from $file_path.
+     * Definition of all lists in configuration file. Will be read once upon construction from
+     * $file_path.
      */
     private $list_definitions;
 
@@ -51,8 +52,8 @@ class Tfyh_list
     private $columns;
 
     /**
-     * an array of all compounds of this list. A compound is a String with replaceble elements to provide a
-     * summary information on a data record within a single String.
+     * an array of all compounds of this list. A compound is a String with replaceble elements to
+     * provide a summary information on a data record within a single String.
      */
     private $compounds;
 
@@ -92,18 +93,20 @@ class Tfyh_list
     private $maxrows;
 
     /**
-     * filter for duplicates, only return the first of multiple, table must be sorted for that column
+     * filter for duplicates, only return the first of multiple, table must be sorted for that
+     * column
      */
     private $firstofblock;
 
     /**
-     * filter for duplicates, only return the first of multiple, table must be sorted for that column
+     * filter for duplicates, only return the first of multiple, table must be sorted for that
+     * column
      */
     private $firstofblock_col;
 
     /**
-     * the value of edit link column. If this value is set, the list will display an edit link within the data
-     * value of this column
+     * the value of edit link column. If this value is set, the list will display an edit link
+     * within the data value of this column
      */
     private $record_link_col;
 
@@ -119,22 +122,22 @@ class Tfyh_list
 
     /**
      * Build a list based on the definition provided in the csv file at $file_path.
-     * 
+     *
      * @param String $file_path
      *            path to file with list definitions. List definitions contain of:
      *            id;permission;name;select;from;where;options. For details see class description.
      * @param int $id
      *            the id of the list to use. Set to 0 to use name identification.
      * @param String $name
-     *            the name of the list to use. Will be used, if id == 0, else it is ignored. Set "" to get the
-     *            last list of a set, which initializes the set.
+     *            the name of the list to use. Will be used, if id == 0, else it is ignored. Set ""
+     *            to get the last list of a set, which initializes the set.
      * @param Tfyh_socket $socket
      *            the socket to connect to the data base
      * @param Tfyh_toolbox $toolbox
      *            the application basic utilities
      * @param array $args
-     *            a set of values which will be replaced in the list definition, e.g. [ "{name]" => "John" ]
-     *            for a list with a condition (`Name` = '{name}')
+     *            a set of values which will be replaced in the list definition, e.g. [ "{name]" =>
+     *            "John" ] for a list with a condition (`Name` = '{name}')
      */
     public function __construct (String $file_path, int $id, String $name, Tfyh_socket $socket, 
             Tfyh_toolbox $toolbox, array $args = [])
@@ -181,14 +184,15 @@ class Tfyh_list
     }
 
     /**
-     * Update a list definition by replacing place holders, usually in braces, but not necessary. plain String
-     * replacement is used, no special logic - only ";" are replaced, for security reasons.
-     * 
+     * Update a list definition by replacing place holders, usually in braces, but not necessary.
+     * plain String replacement is used, no special logic - only ";" are replaced, for security
+     * reasons.
+     *
      * @param array $list_definition
      *            the definition of the list to update
      * @param array $args
-     *            a set of values which will be replaced in the list definition, e.g. [ "{name]" => "John" ]
-     *            for a list with a condition (`Name` = '{name}')
+     *            a set of values which will be replaced in the list definition, e.g. [ "{name]" =>
+     *            "John" ] for a list with a condition (`Name` = '{name}')
      * @return String the updated list definition
      */
     private function replace_args (array $list_definition, array $args)
@@ -206,7 +210,7 @@ class Tfyh_list
 
     /**
      * Check whether the list is properly initialized.
-     * 
+     *
      * @return boolean true, if the either the list is ok or the $id is 0, false, if not
      */
     public function is_valid ()
@@ -216,7 +220,7 @@ class Tfyh_list
 
     /**
      * Get the table name parameter for this list.
-     * 
+     *
      * @return String the table name parameter for this list.
      */
     public function get_table_name ()
@@ -226,7 +230,7 @@ class Tfyh_list
 
     /**
      * Simple getter
-     * 
+     *
      * @return String the list's name.
      */
     public function get_list_name ()
@@ -236,7 +240,7 @@ class Tfyh_list
 
     /**
      * Simple getter
-     * 
+     *
      * @return String the list's id.
      */
     public function get_list_id ()
@@ -246,7 +250,7 @@ class Tfyh_list
 
     /**
      * Simple getter
-     * 
+     *
      * @return String the list set's compiled permission String
      */
     public function get_set_permission ()
@@ -256,7 +260,7 @@ class Tfyh_list
 
     /**
      * Simple getter
-     * 
+     *
      * @return String the list's permission String
      */
     public function get_permission ()
@@ -266,9 +270,9 @@ class Tfyh_list
 
     /**
      * Simple getter
-     * 
-     * @return array all list definitions retrieved from the list definition file. Will be false, if the list
-     *         definition ile was not found.
+     *
+     * @return array all list definitions retrieved from the list definition file. Will be false, if
+     *         the list definition ile was not found.
      */
     public function get_all_list_definitions ()
     {
@@ -276,9 +280,9 @@ class Tfyh_list
     }
 
     /**
-     * Parse all columns within a list definition and split those which are direct columns from the compound
-     * columns
-     * 
+     * Parse all columns within a list definition and split those which are direct columns from the
+     * compound columns
+     *
      * @param String $select            
      */
     private function parse_columns ()
@@ -305,9 +309,9 @@ class Tfyh_list
     }
 
     /**
-     * Add all compounds based on their definition and a raw list row. It is recommended to call this function
-     * only if (count($this->compounds) > 0).
-     * 
+     * Add all compounds based on their definition and a raw list row. It is recommended to call
+     * this function only if (count($this->compounds) > 0).
+     *
      * @param array $row            
      */
     private function build_compounds (array $fetched_db_row)
@@ -337,9 +341,9 @@ class Tfyh_list
     }
 
     /**
-     * Parse the options String containing the sort and filter options, e.g. "sort=-name&filter=doe" or
-     * "sort=ID&link=ID=../forms/change_place.php?id="
-     * 
+     * Parse the options String containing the sort and filter options, e.g. "sort=-name&filter=doe"
+     * or "sort=ID&link=ID=../forms/change_place.php?id="
+     *
      * @param String $options_list            
      */
     public function parse_options (String $options_list)
@@ -374,15 +378,17 @@ class Tfyh_list
 
     /**
      * little internal helper for SQL-statement assembling used by display and zip download.
-     * 
+     *
      * @param String $osorts_list
-     *            the list of sort options using the format [-][#]column[.[-][#]column]. Set "" to use the
-     *            list definition default. The [-] sets the sorting to descendent. the [#] enforces numeric
-     *            sorting for integers stored as Varchar
+     *            the list of sort options using the format [-][#]column[.[-][#]column]. Set "" to
+     *            use the list definition default. The [-] sets the sorting to descendent. the [#]
+     *            enforces numeric sorting for integers stored as Varchar
      * @param String $ofilter
-     *            the column for filter option for this list. Set "" to use the list definition default.
+     *            the column for filter option for this list. Set "" to use the list definition
+     *            default.
      * @param String $ofvalue
-     *            the value for filter option for this list. Set "" to use the list definition default.
+     *            the value for filter option for this list. Set "" to use the list definition
+     *            default.
      * @return string the correct and complete select sql statement
      */
     private function build_sql_cmd (String $osorts_list, String $ofilter, String $ofvalue)
@@ -417,8 +423,8 @@ class Tfyh_list
         // interprete filter
         $where = $this->list_definition["where"];
         if ((count($_SESSION["User"]) > 0) && (strpos($where, "\$mynumber") !== false))
-            $where = str_replace("\$mynumber", $_SESSION["User"][$this->toolbox->users->user_id_field_name], 
-                    $where);
+            $where = str_replace("\$mynumber", 
+                    $_SESSION["User"][$this->toolbox->users->user_id_field_name], $where);
         if ((strlen($of) > 0) && (strlen($ofv) > 0)) {
             $where = " WHERE (" . $where . ") AND (`" . $this->table_name . "`.`" . $of . "` LIKE '" .
                      str_replace('*', '%', $ofv) . "')";
@@ -442,8 +448,9 @@ class Tfyh_list
                     $column_to_use_there = explode("@", $remainder, 2)[0];
                     $id_matched = explode("@", $remainder, 2)[1];
                     $sql_cmd .= "`" . $table_to_look_into . "`.`" . $column_to_use_there . "`, ";
-                    $join_statement = " INNER JOIN `" . $table_to_look_into . "` ON `" . $table_to_look_into .
-                             "`.`" . $id_matched . "`=`" . $this->table_name . "`.`" . $id_to_match . "` ";
+                    $join_statement = " INNER JOIN `" . $table_to_look_into . "` ON `" .
+                             $table_to_look_into . "`.`" . $id_matched . "`=`" . $this->table_name .
+                             "`.`" . $id_to_match . "` ";
                 } else {
                     // direct value
                     $sql_cmd .= "`" . $this->table_name . "`.`" . $column . "`, ";
@@ -451,25 +458,28 @@ class Tfyh_list
             }
         }
         $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 2);
-        $sql_cmd .= " FROM `" . $this->table_name . "`" . $join_statement . $where . $order_by . $limit;
+        $sql_cmd .= " FROM `" . $this->table_name . "`" . $join_statement . $where . $order_by .
+                 $limit;
         return $sql_cmd;
     }
 
     /**
      * Return a html code of this list based on its definition or the provided options.
-     * 
+     *
      * @param String $osorts_list
-     *            the list of sort options using the format [-]column[.[-]column]. Set "" to use the list
-     *            definition default.
+     *            the list of sort options using the format [-]column[.[-]column]. Set "" to use the
+     *            list definition default.
      * @param String $ofilter
      *            the filter option for this list. Set "" to use the list definition default.
      * @param String $ofvalue
-     *            the value for filter option for this list. Set "" to use the list definition default.
+     *            the value for filter option for this list. Set "" to use the list definition
+     *            default.
      * @param bool $short
      *            optional. Set true to get without filter, and download option.
      * @return string html formatted table for web display.
      */
-    public function get_html (String $osorts_list, String $ofilter, String $ofvalue, bool $short = false)
+    public function get_html (String $osorts_list, String $ofilter, String $ofvalue, 
+            bool $short = false)
     {
         if (count($this->list_definition) === 0)
             return "<p>Application configuration error: list not defined. " .
@@ -492,7 +502,8 @@ class Tfyh_list
         foreach ($this->columns as $column) {
             // identify ID-column for change link
             $col ++;
-            if ((strcasecmp($column, $this->record_link_col) == 0) && (strlen($this->record_link) > 0))
+            if ((strcasecmp($column, $this->record_link_col) == 0) &&
+                     (strlen($this->record_link) > 0))
                 $col_id = $col;
             $is_lookup = (strpos($column, ">") !== false);
             $is_compound = (isset($this->compounds[$column]));
@@ -516,8 +527,9 @@ class Tfyh_list
             if ($is_lookup || $is_compound)
                 $list_html .= "<th>" . $ctext . "</th>";
             else
-                $list_html .= "<th><a class='table-header' href='?id=" . $this->id . "&satz=" . $this->list_set .
-                         "&sort=" . $csort . $ofstring . "'>" . $ctext . "</a></th>";
+                $list_html .= "<th><a class='table-header' href='?id=" . $this->id . "&satz=" .
+                         $this->list_set . "&sort=" . $csort . $ofstring . "'>" . $ctext .
+                         "</a></th>";
         }
         $list_html .= "</tr></thead><tbody>";
         
@@ -541,12 +553,15 @@ class Tfyh_list
             $data_cnt = 0;
             $set_id = "0";
             foreach ($row as $data) {
-                $link_user_id = (strcasecmp($this->table_name, $this->toolbox->users->user_table_name) == 0) && (strcasecmp(
-                        $this->columns[$data_cnt], $this->toolbox->users->user_id_field_name) == 0);
-                $is_record_link_col = (strcasecmp($this->columns[$data_cnt], $this->record_link_col) == 0);
+                $link_user_id = (strcasecmp($this->table_name, 
+                        $this->toolbox->users->user_table_name) == 0) &&
+                         (strcasecmp($this->columns[$data_cnt], 
+                                $this->toolbox->users->user_id_field_name) == 0);
+                $is_record_link_col = (strcasecmp($this->columns[$data_cnt], $this->record_link_col) ==
+                         0);
                 if ($link_user_id) {
-                    $row_str .= "<td><b><a href='../pages/nutzer_profil.php?nr=" . $data . "'>" . $data .
-                             "</a></b></td>";
+                    $row_str .= "<td><b><a href='../pages/nutzer_profil.php?nr=" . $data . "'>" .
+                             $data . "</a></b></td>";
                 } elseif ($is_record_link_col) {
                     $row_str .= "<td><b><a href='" . $this->record_link . $data . "'>" . $data .
                              "</a></b></td>";
@@ -572,8 +587,8 @@ class Tfyh_list
         $sort_string = (strlen($osorts_list) == 0) ? "" : "&sort=" . $osorts_list;
         $filter_string = (strlen($ofilter) == 0) ? "" : "&filter=" . $ofilter;
         $fvalue_string = (strlen($ofvalue) == 0) ? "" : "&fvalue=" . $ofvalue;
-        $reference_this_page = "?id=" . $this->list_definition["id"] . "&satz=" . $this->list_set . "&zip=1" .
-                 $sort_string . $filter_string . $fvalue_string;
+        $reference_this_page = "?id=" . $this->list_definition["id"] . "&satz=" . $this->list_set .
+                 "&zip=1" . $sort_string . $filter_string . $fvalue_string;
         
         // provide filter form
         if (! $short) {
@@ -587,7 +602,8 @@ class Tfyh_list
             foreach ($this->columns as $column) {
                 if (strpos($column, ".") === false) {
                     if (strcasecmp($column, $ofilter) == 0)
-                        $list_html .= '<option value="' . $column . '" selected>' . $column . "</option>\n";
+                        $list_html .= '<option value="' . $column . '" selected>' . $column .
+                                 "</option>\n";
                     else
                         $list_html .= '<option value="' . $column . '">' . $column . "</option>\n";
                 }
@@ -596,8 +612,8 @@ class Tfyh_list
             $list_html .= "<br>Wert = (wildcard *): <input type='text' name='fvalue' class='forminput' value='" .
                      $ofvalue . "'  style='width:19em' />" .
                      "&nbsp;&nbsp;&nbsp;&nbsp;<input type='submit' value='gefilterte Liste anzeigen' class='formbutton'/></form>";
-            $list_html .= "</p><p>Liste als Csv-Datei herunterladen: <a href='" . $reference_this_page . "'>" .
-                     $this->table_name . ".zip</a>";
+            $list_html .= "</p><p>Liste als Csv-Datei herunterladen: <a href='" .
+                     $reference_this_page . "'>" . $this->table_name . ".zip</a>";
             $list_html .= "<br><br>BITTE BEACHTEN: Verwende die zur Verfügung gestellte Information nur zum " .
                      "geregelten Zweck. Eine Weitergabe von hier exportierten Listen ist nicht gestattet.</p>";
         }
@@ -605,9 +621,21 @@ class Tfyh_list
     }
 
     /**
-     * Provide a list with all data retrieved. Simple database get, no mapping to field names included.
+     * Get the sql-code which is used to retreive the rows. Only for debugging purposes.
      * 
-     * @return array an array of all rows - each row being a normal array itself. An empty array on no match.
+     * @return string
+     */
+    public function get_sql ()
+    {
+        return $this->build_sql_cmd($this->osorts_list, $this->ofilter, $this->ofvalue);
+    }
+
+    /**
+     * Provide a list with all data retrieved. Simple database get, no mapping to field names
+     * included.
+     *
+     * @return array an array of all rows - each row being a normal array itself. An empty array on
+     *         no match.
      */
     public function get_rows ()
     {
@@ -639,7 +667,7 @@ class Tfyh_list
 
     /**
      * Get the index of a field within a row of the list.
-     * 
+     *
      * @param String $field_name
      *            name of the field to identify
      * @return number|boolean the index, if matched, else false.
@@ -656,10 +684,10 @@ class Tfyh_list
     }
 
     /**
-     * Identify the fields of the row by naming the $row array, e.g. from "array(2) { [0]=> string(1) "6"
-     * [1]=> string(4) "1111" }" to "array(2) { ["ID"]=> string(1) "6" ["Besuchernummer"]=> string(4) "1111"
-     * }"
-     * 
+     * Identify the fields of the row by naming the $row array, e.g. from "array(2) { [0]=>
+     * string(1) "6" [1]=> string(4) "1111" }" to "array(2) { ["ID"]=> string(1) "6"
+     * ["Besuchernummer"]=> string(4) "1111" }"
+     *
      * @param array $row
      *            row to set names. Shall be a row that was retrieved by get_rows().
      */
@@ -675,15 +703,15 @@ class Tfyh_list
     }
 
     /**
-     * Provide a csv file, filter and sorting according to default. csv data content is UTF-8 encoded - i. e.
-     * uses the data as they are provided by the data base.
-     * 
+     * Provide a csv file, filter and sorting according to default. csv data content is UTF-8
+     * encoded - i. e. uses the data as they are provided by the data base.
+     *
      * @param array $verified_user
      *            The user to whom this list was provided. For logging and access control.
      * @param array $only_first_of
-     *            If this value is set to a valid column name, only those rows are returned for which this
-     *            column value differs from the row before. Used for efa versionized tables to get the most
-     *            recent only.
+     *            If this value is set to a valid column name, only those rows are returned for
+     *            which this column value differs from the row before. Used for efa versionized
+     *            tables to get the most recent only.
      * @return a csv String. False on all errors.
      */
     public function get_csv (array $verified_user, $only_first_of = null)
@@ -724,7 +752,8 @@ class Tfyh_list
             }
             // pass the first only for a specific id, think of below condition in negative for those
             // dropped.
-            if (($check_col_pos != $c) || is_null($last_checked) || (strcmp($data, $last_checked) != 0))
+            if (($check_col_pos != $c) || is_null($last_checked) ||
+                     (strcmp($data, $last_checked) != 0))
                 $csv .= substr($row_str, 0, strlen($row_str) - 1) . "\n";
         }
         return $csv;
@@ -732,7 +761,7 @@ class Tfyh_list
 
     /**
      * Provide a csv file zipped and then base64 encoded, filter and sorting according to default.
-     * 
+     *
      * @return mixed a base64 encoded zip file.
      */
     public function get_base64 ()
@@ -752,18 +781,18 @@ class Tfyh_list
     }
 
     /**
-     * Provide a csv file for download. Will not return, but exit via $toolbox->return_string_as_zip()
-     * function.
-     * 
+     * Provide a csv file for download. Will not return, but exit via
+     * $toolbox->return_string_as_zip() function.
+     *
      * @param String $osorts_list
-     *            the list of sort options using the format [-]column[.[-]column]. Set "" to use the list
-     *            definition default.
+     *            the list of sort options using the format [-]column[.[-]column]. Set "" to use the
+     *            list definition default.
      * @param String $ofilter
      *            the filter option for this list. Set "" to use the list definition default.
      * @param String $ofvalue
      *            the filter value for this list. Set "" to use the list definition default.
-     * @return if this function terminates normally, it will not return, but start a download. If errors
-     *         occur, it will return an eroor String.
+     * @return if this function terminates normally, it will not return, but start a download. If
+     *         errors occur, it will return an eroor String.
      */
     public function get_zip (String $osorts_list, String $ofilter, String $ofvalue)
     {
@@ -778,8 +807,8 @@ class Tfyh_list
                  $_SESSION["User"][$this->toolbox->users->user_lastname_field_name] . " (" .
                  $_SESSION["User"][$this->toolbox->users->user_id_field_name] . ", " .
                  $_SESSION["User"]["Rolle"] . ")";
-        $csv .= "\nBereitgestellt am " . date("d.m.Y H:i:s") . " von " . $_SERVER['HTTP_HOST'] . " an " .
-                 $destination . "\nWeitergabe dieser Liste ist nicht gestattet.\n";
+        $csv .= "\nBereitgestellt am " . date("d.m.Y H:i:s") . " von " . $_SERVER['HTTP_HOST'] .
+                 " an " . $destination . "\nWeitergabe dieser Liste ist nicht gestattet.\n";
         $this->toolbox->return_string_as_zip($csv, $this->table_name . ".csv");
     }
 }

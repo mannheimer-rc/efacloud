@@ -240,8 +240,8 @@ class Efa_db_layout
         $not_matching = "";
         for ($v = 1; $v <= $max_version; $v ++) {
             $matched = true;
-            $not_matching = "Vergleiche Version " . $v . "\n";
-            $not_matching .= "-------------------\n";
+            $not_matching .= "\nVergleiche Version " . $v . "\n";
+            $not_matching .= "--------------------\n";
             $db_layout = self::db_layout($v);
             foreach ($db_layout as $table_name => $table_columns) {
                 if (isset($db_layout_read[$table_name])) {
@@ -273,7 +273,7 @@ class Efa_db_layout
                 return $v;
         }
         file_put_contents("../log/db_layout_check.log", $not_matching);
-        return "Keine passende Version gefunden.";
+        return "Keine passende Version gefunden.<br>Details siehe unten sowie in der Datei '../log/db_layout_check.log'";
     }
 }
     

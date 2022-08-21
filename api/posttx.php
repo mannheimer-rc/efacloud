@@ -12,7 +12,7 @@ $debug = true;
 
 // ===== initialize toolbox & access control.
 include_once '../classes/tfyh_toolbox.php';
-$toolbox = new Tfyh_toolbox("../config/settings");
+$toolbox = new Tfyh_toolbox();
 // ===== debug initialization
 $debug = ($toolbox->config->debug_level > 0);
 $posttx_debuglog = "../log/debug_posttx.log";
@@ -73,8 +73,8 @@ if ($tx_handler->txc["cresult_code"] >= 400)
     $tx_handler->send_response_and_exit();
 
 // ===== trigger transactions load throttling.
-$loadTxOk = $toolbox->load_throttle("api_inits/", 
-        $toolbox->config->settings_tfyh["init"]["max_inits_per_hour"]);
+$loadTxOk = $toolbox->load_throttle("api_inits", 
+        $toolbox->config->settings_tfyh["init"]["max_inits_per_hour"], "posttx.php");
 if ($loadTxOk !== true) {
     $tx_handler->txc["cresult_code"] = 406;
     $tx_handler->txc["cresult_message"] = "Overload detected.";
@@ -89,6 +89,7 @@ $tx_handler->php_script_started_at = $php_script_started_at;
 
 // ===== Test the data base connection
 $connected = $socket->open_socket();
+
 if ($connected !== true) {
     $tx_handler->txc["result_code"] = 407;
     $tx_handler->txc["result_message"] = "Web server failed to connect to the data base.";
@@ -109,6 +110,7 @@ if ($user_to_verify === false) {
 // try by app session: reading the user from an existing session will return false on failure
 $session_user_id = (strlen($tx_handler->txc["password"]) > 20) &&
          $toolbox->app_sessions->session_user_id($tx_handler->txc["password"]);
+
 $verified = (($session_user_id !== false) && ($session_user_id == $api_user_id));
 if ($verified) {
     if ($debug)
@@ -120,6 +122,7 @@ if ($verified) {
     $api_session_id = $tx_handler->txc["password"];
     $is_new_session = false;
     $session_opened = $toolbox->app_sessions->session_open($api_user_id, $api_session_id);
+
     if (! $session_opened) {
         $tx_handler->txc["cresult_code"] = 406;
         $tx_handler->txc["cresult_message"] = "Failed to reuse your existing session, please try again later.";

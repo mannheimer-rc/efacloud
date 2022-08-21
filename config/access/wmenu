@@ -12,13 +12,13 @@ book;bths,$8704;Reservieren ;
 _book_bookAboat;bths,$512;Boot reservieren;event:getForm_bookAboat
 _book_showReservations;bths,$8192;Reservierungen anzeigen;event:getStatistics_6
 logbook;bths;Fahrtenbuch ;
-_logbook_1;bths,$1024;nach Fahrtnummer;event:getStatistics_4
-_logbook_2;bths,$1024;nach Startzeit;event:getStatistics_5
+_logbook_1;bths,$1024;nach Fahrtnummer;event:getStatistics_5
+_logbook_2;bths,$1024;nach Startzeit;event:getStatistics_4
 _logbook_3;bths;aktualisieren;event:refreshEfaWeb
 _logbook_changeLogbook;board;anderes wählen;event:getForm_changeLogbook
 statistics;board;Statistiken ;
-_statistics_name;board;Kilometer nach Name ;event:getStatistics_0
-_statistics_dist;board;Kilometer nach Distanz ;event:getStatistics_1
+_statistics_name;board;Boots-km nach Name ;event:getStatistics_0
+_statistics_dist;board;Boots-km nach Distanz ;event:getStatistics_1
 efacloud;board;zum efaCloud Server;../pages/home.php
 logout;anonymous;Beenden;../pages/logout.php
 view;.member;Ansehen;

@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * Collection of all static event bindings. Includes the document ready call
  */
 
@@ -6,6 +12,8 @@
  * Refresh the memory and user interface by reloading all data from the server.
  */
 function _refreshEfaWeb() {
+	// display current logbook name
+	$('#clubname').html("<br>" + $_clubname);
 	// display current logbook name
 	$('#logbookname').html($_logbookname);
 	// clear all lists
@@ -23,14 +31,14 @@ function _refreshEfaWeb() {
 function _getStatistics(mode) {
 	var html = "<h3>" + bStatistics.names[mode] + "</h3>";
 	if (mode == 7)
-		bModal.showHtml(html + bDamage.getOpenDamages(100));
+		cModal.showHtml(html + bDamage.getOpenDamages(100));
 	else if (mode == 6)
-		bModal.showHtml(html
+		cModal.showHtml(html
 				+ bReservation.getUpcomingReservations(100, "@All"));
 	else if ((mode == 4) || (mode == 5))
-		bModal.showHtml(html + bStatistics.getTripsHtml((mode & 1), 50));
+		cModal.showHtml(html + bStatistics.getTripsHtml((mode & 1), 50));
 	else
-		bModal.showHtml(html + bStatistics.getDistancesHtml(mode));
+		cModal.showHtml(html + bStatistics.getDistancesHtml(mode));
 }
 
 /**
@@ -43,8 +51,8 @@ function _getForm(formName, parameter) {
 	if (parameter && (isNaN(parameter) || (parameter === true)))
 		bFormHandler[formName + "_do"]({
 			BoatId : parameter,
-			Date : bToolbox.dateNow(),
-			StartTime : bToolbox.timeNow()
+			Date : cToolbox.dateNow(),
+			StartTime : cToolbox.timeNow()
 		});
 	// numeric parameter is the EntryId of a trip for trip end.
 	else if (parameter) {
@@ -65,13 +73,13 @@ function _getDatasheet(datasheetType, recordId) {
 		if (boat) {
 			bReservation.markCurrentlyBookedBoats();
 			if (bPanel.currentBoatTrips[recordId])
-				bModal.showHtml(bTrip
+				cModal.showHtml(bTrip
 						.getDatasheet(bPanel.currentBoatTrips[recordId]));
 			else if (boat["statusToUseInPanel"].localeCompare("BOOKED") == 0)
-				bModal.showHtml("<h4>Reservierungen für " + boat.Name + "</h4>"
+				cModal.showHtml("<h4>Reservierungen für " + boat.Name + "</h4>"
 						+ bReservation.getUpcomingReservations(10, boat.Id));
 			else
-				bModal.showHtml(bBoat.getDatasheet(boat));
+				cModal.showHtml(bBoat.getDatasheet(boat));
 		}
 	}
 }
@@ -102,7 +110,7 @@ function _showList(type, count) {
 	try {
 		bPanel.showList(type, count);
     } catch (e) {
-		bModal.showException(e);
+		cModal.showException(e);
 	}
 }
 
@@ -124,7 +132,7 @@ function doAction(actionId) {
 		try {
 			window["_" + action[0]](action[1], action[2]);
 		} catch (e) {
-			bModal.showException(e);
+			cModal.showException(e);
 		}
 		bindMenuEvents();
 	}
@@ -187,7 +195,7 @@ var uiRefreshTimer = setInterval(function() {
 			$_last_synch = nowSeconds;
 		}
     } catch (e) {
-    	bModal.showException(e);
+    	cModal.showException(e);
 	}
 }, $_uiRefreshMillis);
 
@@ -195,8 +203,8 @@ var uiRefreshTimer = setInterval(function() {
  * initialization procedures to be performed when document was loaded.
  */
 $(document).ready(function() {
-	bToolbox.getGetparams();
-	bToolbox.i18n_init($_locale);
+	cToolbox.getGetparams();
+	cToolbox.i18n_init($_locale);
 	if ($_efaCloudUserID < 0)
 		// redirect to login for non authorized user.
 		window.location.href = "../forms/login.php?goto=../pages/efaWeb.php";

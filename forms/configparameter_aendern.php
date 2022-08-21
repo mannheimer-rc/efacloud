@@ -27,16 +27,11 @@ if ($done > 0) {
     if (strlen($form_errors) > 0) {
         // do nothing. This avoids any change, if form errors occured.
     } elseif ($done == 1) {
-        // write settings
-        $settings_path = "../config/settings";
-        $cfgStr = serialize($entered_data);
-        $cfgStrBase64 = base64_encode($cfgStr);
-        $info = "<p>" . $settings_path . '_app wird geschrieben ... ';
-        $byte_cnt = file_put_contents($settings_path . "_app", $cfgStrBase64);
-        $info .= $byte_cnt . " Bytes.</p>";
-        $todo = $done + 1;
-        // refresh settings immediately
+        // write configuration
+        $info .= $toolbox->config->store_app_config($entered_data);
+        // reload written configuration
         $toolbox->config->load_app_configuration();
+        $todo = $done + 1;
     }
 }
 

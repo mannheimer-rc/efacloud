@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * All standard statisitcs are collected here. No configurable statisitcs are
  * provided.
  */
@@ -31,7 +37,7 @@ var bStatistics = {
 					for (key in row) {
 						if ((key.indexOf("Cox") >= 0)
 								|| (key.indexOf("Crew") >= 0)) {
-							if (bToolbox.isGUID(row[key])) {
+							if (cToolbox.isGUID(row[key])) {
 								if (rowers_distances[row[key]])
 									rowers_distances[row[key]] += distance;
 								else
@@ -58,7 +64,7 @@ var bStatistics = {
 								.trim());
 					else if (distanceStr && distanceStr.indexOf("m") >= 0)
 						distance = parseInt(distanceStr.replace("m", "").trim()) / 1000;
-					if (bToolbox.isGUID(row.BoatId)) {
+					if (cToolbox.isGUID(row.BoatId)) {
 						if (boats_distances[row.BoatId])
 							boats_distances[row.BoatId] += distance;
 						else

@@ -189,9 +189,9 @@ class Efa_info
                         $destination = "-";
                     // filter those of the current logbook by year
                     if (strcmp(date("Y"), substr($trip["Date"], 0, 4)) == 0) {
-                        $start_time = (strcmp(date("Y-m-d"), $trip["Date"]) != 0) ? date("d.m.Y", strtotime($trip["Date"])) . " - " .
-                                 $trip["StartTime"] : $trip["StartTime"];
-                                 $table[] = [strval($trip["EntryId"]),$boatname,$start_time,$destination
+                        $start_time = (strcmp(date("Y-m-d"), $trip["Date"]) != 0) ? date("d.m.Y", 
+                                strtotime($trip["Date"])) . " - " . $trip["StartTime"] : $trip["StartTime"];
+                        $table[] = [strval($trip["EntryId"]),$boatname,$start_time,$destination
                         ];
                     }
                 }
@@ -228,8 +228,9 @@ class Efa_info
         ];
         foreach ($boats_not_available as $boat_not_available) {
             $boat = $this->socket->find_record("efa2boats", "Id", $boat_not_available["BoatId"]);
+            $boat_valid = (strlen($boat["InvalidFrom"]) > 15);
             $boatname = (($boat != false) && isset($boat["Name"])) ? $boat["Name"] : "Fremdboot";
-            if (! isset($boats_shown[$boatname])) {
+            if ($boat_valid && ! isset($boats_shown[$boatname])) {
                 $table[] = [$boatname,$boat_not_available["CurrentStatus"],
                         $boat_not_available["BaseStatus"]
                 ];
@@ -300,15 +301,18 @@ class Efa_info
     {
         
         // get all damages which lead to a not usable boat
-        $damages_not_usable = $this->socket->find_records("efa2boatdamages", "Severity", "NOTUSEABLE", 100);
+        include_once "../classes/tfyh_list.php";
+        $damage_list = new Tfyh_list("../config/lists/efaWeb", 2, "efaWeb_boatdamages", $this->socket, $this->toolbox);
+        $damage_rows = $damage_list->get_rows();
         $boats_not_usable = [];
-        foreach ($damages_not_usable as $damage_not_usable) {
-            // filter those which have already been fixed
-            if (strcasecmp($damage_not_usable["Fixed"], "true") !== 0) {
-                $boat = $this->socket->find_record("efa2boats", "Id", $damage_not_usable["BoatId"]);
+        foreach ($damage_rows as $damage_row) {
+            $damage_record = $damage_list->get_named_row($damage_row);
+            // filter those which are NOTUSEABLE
+            if (strcasecmp($damage_record["Severity"], "NOTUSEABLE") == 0) {
+                $boat = $this->socket->find_record("efa2boats", "Id", $damage_record["BoatId"]);
                 if (! isset($boats_not_usable[$boat["Name"]]))
                     $boats_not_usable[$boat["Name"]] = [];
-                $boats_not_usable[$boat["Name"]][] = $damage_not_usable;
+                    $boats_not_usable[$boat["Name"]][] = $damage_record;
             }
         }
         // list all boats with all damages.

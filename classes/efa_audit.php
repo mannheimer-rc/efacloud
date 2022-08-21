@@ -38,7 +38,7 @@ class Efa_audit
      * ANDed must be unique, they are separated by a dot.
      */
     private static $assert_unique = ["efa2autoincrement" => [],"efa2boatdamages" => ["Damage.BoatId"
-    ],"efa2reservations" => ["Reservation.BoatId"
+    ],"efa2boatreservations" => ["Reservation.BoatId"
     ],"efa2boatstatus" => [],"efa2clubwork" => [],"efa2crews" => ["Name"
     ],"efa2fahrtenabzeichen" => [],"efa2logbook" => ["EntryId.Logbookname"
     ],"efa2messages" => [],"efa2sessiongroups" => ["Name.Logbook"
@@ -396,19 +396,28 @@ class Efa_audit
             $lastModified_index = $lists["corrupt"][$list_id]->get_field_index("LastModified");
             foreach ($lists["corrupt"][$list_id]->get_rows() as $row) {
                 $cause = "";
-                if (strlen($row[$ecrid_index]) == 0)
+                if (! isset($row[$ecrid_index]) || strlen($row[$ecrid_index]) == 0)
                     $cause .= "Ecrid-Angabe fehlt, ";
-                if (strlen($row[$lastModification_index]) == 0)
+                if (! isset($row[$lastModification_index]) || strlen($row[$lastModification_index]) == 0)
                     $cause .= "Angabe zur Art der letzten Änderung (LastModification) fehlt, ";
-                if (strlen($row[$ecrid_index]) == 0)
+                if (! isset($row[$lastModified_index]) || strlen($row[$lastModified_index]) == 0)
                     $cause .= "Angabe zum Zeitpunkt der letzten Änderung (LastModified) fehlt, ";
                 // get full record
-                $full_record = $this->socket->find_record($table_name, "ecrid", $row[$ecrid_index]);
+                $full_record = (isset($row[$ecrid_index])) ? $this->socket->find_record($table_name, "ecrid", 
+                        $row[$ecrid_index]) : $lists["corrupt"][$list_id]->get_named_row($row);
                 $is_empty = ($this->is_content_empty($table_name, $full_record));
                 $record_str = "";
-                foreach ($full_record as $key => $value)
-                    if (! is_null($value) && (strlen($value) > 0) && (strcasecmp($key, "ecrhis") != 0))
-                        $record_str .= $key . "=" . $value . "; ";
+                foreach ($full_record as $key => $value) {
+                    if (! is_null($value) && (strlen($value) > 0) && (strcasecmp($key, "ecrhis") != 0)) {
+                        $record_str .= $key . "=" . $value;
+                        if (strcasecmp("LastModified", $key) == 0)
+                            $record_str .= "/" .
+                                     date("d.m.Y H:i:s", intval(substr($value, 0, strlen($value) - 3)));
+                        $record_str .= "; ";
+                    }
+                }
+                $record_str .= " <a class='eventitem' id='viewrecord_" . $table_name . "_" . $row[$ecrid_index] .
+                         "'>ansehen</a>";
                 $corrupt_records_list .= "<li>Fehler: " . $cause . " in Datensatz " .
                          (($is_empty) ? " <b><i>inhaltlich leer</b></i> " : "") . $record_str . "</li>\n";
                 if ($is_empty) {
@@ -422,7 +431,7 @@ class Efa_audit
                             $audit_result .= "<li>Fehler bei der Aktualisierung eines Datensatzes: " .
                                      $update_result . " </li>\n";
                     } else
-                        $corrupt_records_list .= "<li>wird bei Bereinigung automatisch gelöscht.</li>\n";
+                        $corrupt_records_list .= "<li>==&gt; <i>wird bei Bereinigung automatisch als gelöscht vermerkt.</i></li>\n";
                 }
                 // collect key of referencing record
                 $corrupt_records_cnt ++;
@@ -576,10 +585,10 @@ class Efa_audit
                                                     } else {
                                                         foreach ($records_to_change as $record_to_change) {
                                                             $record_to_change[$field_to_change] .= $mark;
-                                                            $audit_result .= "<li>Nach Bereinigung ist der neuer Wert '" .
+                                                            $audit_result .= "<li>==&gt; <i>Nach Bereinigung ist der neuer Wert '" .
                                                                      $record_to_change[$field_to_change] .
                                                                      " in '" . $field_to_change . "' für '" .
-                                                                     $id . "' zur Unterscheidung</li>";
+                                                                     $id . "' zur Unterscheidung</i></li>";
                                                         }
                                                     }
                                                     $mark .= ".";
@@ -607,7 +616,7 @@ class Efa_audit
                                 $named_row = $lists["duplicate"][$list_id]->get_named_row($occurrence);
                                 foreach ($named_row as $key => $value) {
                                     $audit_result .= "$key = $value";
-                                    if ($this->is_UUID($value)) {
+                                    if (! is_null($value) && $this->is_UUID($value)) {
                                         $invalid32 = $uuid_invalids32[$value];
                                         if ($invalid32 > 0)
                                             $audit_result .= ", " .
@@ -617,6 +626,8 @@ class Efa_audit
                                     }
                                     $audit_result .= "; ";
                                 }
+                                $audit_result .= " <a class='eventitem' id='viewrecord_" . $table_name . "_" .
+                                         $named_row["ecrid"] . "'>ansehen</a>";
                                 $audit_result .= "<br>";
                             }
                             $audit_result .= "</li>\n";
@@ -661,6 +672,8 @@ class Efa_audit
                     }
                     $recordstr .= "$key = $value; ";
                 }
+                $recordstr .= " <a class='eventitem' id='viewrecord_" . $table_name . "_" . $row[$ecrid_index] .
+                         "'>ansehen</a>";
                 if (strlen($missing) > 0)
                     $missing = substr($missing, 0, strlen($missing) - 2);
                 if (strlen($defaulting) > 0)
@@ -679,8 +692,8 @@ class Efa_audit
                     } else
                         $audit_result .= "<li>die notwendigen Angaben '" . $defaulting .
                                  "' fehlen im Datensatz: " . $recordstr .
-                                 " und werden bei einer Bereinigung auf den Standard '" . $default_values .
-                                 "' gesetzt. </li>\n";
+                                 "<br>==&gt; <i>das Datenfeld wird bei einer Bereinigung auf den Standard '" .
+                                 $default_values . "' gesetzt.</i></li>\n";
                 }
                 if (strlen($missing) > 0) {
                     $audit_result .= "<li>die notwendigen Angaben '" . $missing . "' fehlen im Datensatz: " .
@@ -820,7 +833,8 @@ class Efa_audit
                         $reference .= $previous_record[$part] . ".";
                     else
                         return "Dem Datensatz fehlt das auf Eindeutigkeit zu prüfende Feld '" .
-                                 $assert_unique_field . "'. ";
+                                 $assert_unique_field . "'. " . " <a class='eventitem' id='viewrecord_" .
+                                 $tablename . "_" . $record_to_check["ecrid"] . "'>ansehen</a>";
                 } else
                     $reference .= $record_to_check[$part] . ".";
             }
@@ -834,11 +848,13 @@ class Efa_audit
                     if ((strcmp($row[$col_ecrid], $reference_ecrid) != 0) && ! $is_versionized)
                         return "Das eindeutige Feld '" . $assert_unique_field .
                                  "' ist nicht eindeutig. Weiteres Vorkommen im Datensatz mit ecrid '" .
-                                 $row[$col_ecrid] . "'";
+                                 $row[$col_ecrid] . "'" . " <a class='eventitem' id='viewrecord_" . $tablename .
+                                 "_" . $record_to_check["ecrid"] . "'>ansehen</a>";
                     if ((strcmp($row[$col_id], $reference_id) != 0) && $is_versionized)
                         return "Das eindeutige Feld '" . $assert_unique_field .
                                  "' ist nicht eindeutig. Weiteres Vorkommen im Objekt mit Id '" . $row[$col_id] .
-                                 "'";
+                                 "'" . " <a class='eventitem' id='viewrecord_" . $tablename . "_" .
+                                 $record_to_check["ecrid"] . "'>ansehen</a>";
                 }
             }
         }

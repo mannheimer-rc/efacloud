@@ -136,7 +136,7 @@ if ($menu->is_allowed_menu_item("../forms/datensatz_aendern.php", $_SESSION["Use
     ?>
 <div class='w3-col l2'>
 			<a
-				href="../forms/datensatz_aendern.php?searchresultindex=<?php echo $search_result_index; ?>"
+				href="../forms/datensatz_aendern.php?table=<?php echo $tablename . "&ecrid=" . $tablerow["ecrid"]; ?>"
 				class=formbutton style='float: left;'>Datensatz ändern</a> <br>&nbsp;
 		</div>
 <?php

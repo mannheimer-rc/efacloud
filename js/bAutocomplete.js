@@ -1,3 +1,8 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
 
 // Quelle: https://www.w3schools.com/howto/tryit.asp?filename=tryhow_js_autocomplete
 /**

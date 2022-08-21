@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * Handle all transaction responses from efacloudServer including retry on
  * failures.
  */
@@ -14,7 +20,7 @@ var bTxHandler = {
 			// skip empty fields to avoid any type mismatch error, e.g by
 			// setting an int with ''.
 			if (record[key] || (record[key] === 0))
-				doublets.push(key + ";" + bToolbox.encodeCsvEntry(record[key]));
+				doublets.push(key + ";" + cToolbox.encodeCsvEntry(record[key]));
 		}
 		return doublets;
 	},
@@ -70,7 +76,7 @@ var bTxHandler = {
 	 * handle the response for an update statement.
 	 */
 	select_resp : function(tx) {
-		let list = bToolbox.readCsvList(tx.resultMessage);
+		let list = cToolbox.readCsvList(tx.resultMessage);
 		tx.callback(list);
 	},
 
@@ -116,9 +122,9 @@ var bTxHandler = {
 			bPanel.update();
 		}
 
-		// reload the page, if the login failed. This will either restart efaWeb or provide an appropriate error.
+		// provide an appropriate error, if the login failed.
 		if ((txrc.cresultCode == 402) || (txrc.cresultCode == 403)) 
-			location.reload();
+			location.href = "../pages/error.php";
 	},
 
 	/**

@@ -86,7 +86,7 @@ foreach ($table_names as $tn) {
 }
 $structure_html .= "<h5>In Summe " . $total_table_count . " Tabellen mit " . $total_record_count .
          " Datensätzen</h5>";
-$structure_html .= "<p>Für den Tabellenexport zusammengefasst:</p><p>" . $summary . "</p>";
+// $structure_html .= "<p>Für den Tabellenexport zusammengefasst:</p><p>" . $summary . "</p>";
 
 // return file before page output starts.
 if ($download_csv > 0) {

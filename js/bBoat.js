@@ -1,3 +1,9 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
 var bBoat = {
 
 	descriptions : [],
@@ -54,11 +60,20 @@ var bBoat = {
 		return 0;
 	},
 
+	/**
+	 * get a full description of the boat as datasheet to display in the modal.
+	 */
 	getDatasheet : function(boatRecord) {
 		html = "<h4>" + boatRecord["Name"] + "</h4><p>";
 		for (boatField in boatRecord) {
-			html += "<b>" + boatField + "</b>: " + boatRecord[boatField]
-					+ "<br>";
+			var value = boatRecord[boatField];
+			if (boatField.localeCompare("TypeCoxing") == 0)
+				value = $_efaTypes["COXING"][value];
+			else if (boatField.localeCompare("TypeSeats") == 0)
+				value = $_efaTypes["NUMSEATS"][value];
+			else if (boatField.localeCompare("TypeRigging") == 0)
+				value = $_efaTypes["RIGGING"][value];
+			html += "<b>" + boatField + "</b>: " + value + "<br>";
 		}
 		var boatstatusRowNumber = bLists.indices.efaWeb_boatstatus_guids[boatRecord["Id"]];
 		var boatstatusRecord = bLists.lists.efaWeb_boatstatus[boatstatusRowNumber];
@@ -68,6 +83,37 @@ var bBoat = {
 					+ boatstatusRecord[boatstatusField] + "<br>";
 		}
 		return html + "</p>";
+	},
+
+	/**
+	 * Get the correct seat type text description
+	 */
+	getSeatTypeText : function(boatRecord) {
+		var bTypeSeats = boatRecord["TypeSeats"].split(/;/g);
+		var bTypeCoxed = boatRecord["TypeCoxing"].split(/;/g);
+		var seatTypeText = "";
+		for (var i = 0; i < bTypeSeats.length; i++) {
+			var withCox = (bTypeCoxed[i].localeCompare("COXED") == 0) ? " mit"
+					: "";
+			seatTypeText += $_efaTypes["NUMSEATS"][bTypeSeats[i]] + withCox
+					+ ", ";
+		}
+		seatTypeText = seatTypeText.substring(0, seatTypeText.length - 2);
+		return seatTypeText;
+	},
+
+	/**
+	 * Get the correct seat type text description
+	 */
+	getBoatTypeText : function(boatRecord) {
+		var bTypeType = boatRecord["TypeType"].split(/;/g);
+		var bTypeRigging = boatRecord["TypeRigging"].split(/;/g);
+		var typeTypeText = "";
+		for (var i = 0; i < bTypeType.length; i++)
+			typeTypeText += $_efaTypes["BOAT"][bTypeType[i]] + " "
+					+ $_efaTypes["RIGGING"][bTypeRigging[i]] + ", ";
+		typeTypeText = typeTypeText.substring(0, typeTypeText.length - 2);
+		return typeTypeText;
 	},
 
 	/**

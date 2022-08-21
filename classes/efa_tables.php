@@ -367,8 +367,12 @@ class Efa_tables
     {
         $this->socket = $socket;
         $this->toolbox = $toolbox;
-        $cfg = $toolbox->config->get_cfg();
-        $this->db_layout_version = (isset($cfg["db_layout"])) ? intval($cfg["db_layout"]) : 1;
+        $cfg_db = $toolbox->config->get_cfg_db();
+        $this->db_layout_version = intval($cfg_db["db_layout_version"]);
+        // minimum supported cofiguration version is db layout V3, the first with ecrid.
+        // If the configuration is lower, the DB audit will not appropriately run.
+        if ($this->db_layout_version < 4)
+            $this->db_layout_version = 4;
         $this->debug_on = $toolbox->config->debug_level > 0;
         include_once "../classes/efa_audit.php";
     }
@@ -711,7 +715,7 @@ class Efa_tables
         if (strlen($allCrewIds) > 0)
             $allCrewIds = substr($allCrewIds, 0, strlen($allCrewIds) - 1);
         if (strlen($allCrewIds) == 0)
-            $allCrewIds = "-"; // if the field is left empty it will always be regenerated
+            $allCrewIds = "-"; // if the field is left empty it will always be re-generated
         return $allCrewIds;
     }
 
@@ -850,7 +854,7 @@ class Efa_tables
             if (strcasecmp($tablename, "efa2boatdamages") == 0) {
                 $maxNumericID = $this->socket->find_records_sorted_matched($tablename, [], 1, "", "Damage", 
                         false);
-                $setautoincrement = intval($maxNumericID["Damage"]);
+                $setautoincrement = intval($maxNumericID[0]["Damage"]);
                 $this->socket->update_record_matched($efaCloudUserID, "efa2autoincrement", 
                         ["Sequence" => "efa2boatdamages"
                         ], 
@@ -861,7 +865,7 @@ class Efa_tables
             if (strcasecmp($tablename, "efa2boatreservations") == 0) {
                 $maxNumericID = $this->socket->find_records_sorted_matched($tablename, [], 1, "", 
                         "Reservation", false);
-                $setautoincrement = intval($maxNumericID["Reservation"]);
+                $setautoincrement = intval($maxNumericID[0]["Reservation"]);
                 $this->socket->update_record_matched($efaCloudUserID, "efa2autoincrement", 
                         ["Sequence" => "efa2boatreservations"
                         ], 
@@ -872,7 +876,7 @@ class Efa_tables
             if (strcasecmp($tablename, "efa2messages") == 0) {
                 $maxNumericID = $this->socket->find_records_sorted_matched($tablename, [], 1, "", "MessageId", 
                         false);
-                $setautoincrement = intval($maxNumericID["MessageId"]);
+                $setautoincrement = intval($maxNumericID[0]["MessageId"]);
                 $this->socket->update_record_matched($efaCloudUserID, "efa2autoincrement", 
                         ["Sequence" => "efa2messages"
                         ], 
@@ -985,6 +989,79 @@ class Efa_tables
     }
 
     /**
+     * Register a modification in order to trigger client synchronisation: increase ChangeCount and
+     * LastModified by 1 and 1sec respectively
+     * 
+     * @param array $to_record
+     *            record to be changed
+     * @param int $last_modified_secs
+     *            time to be used for LastModified in seconds, "000" will be appended
+     * @param String $change_count
+     *            current change count as String (like the record is provided by $socket)
+     * @param String $last_modification
+     *            modification to register
+     * @return string
+     */
+    public function register_modification (array $to_record, int $last_modified_secs, String $change_count, 
+            String $last_modification)
+    {
+        $to_record["LastModified"] = strval($last_modified_secs) . "000";
+        $to_record["ChangeCount"] = strval(intval($change_count) + 1);
+        $to_record["LastModification"] = $last_modification;
+        return $to_record;
+    }
+
+    /**
+     * Check whether two records are equal in their values. This includes all fields. Equality is checked
+     * after String conversion and NULL Is regarded equal to ""..
+     * 
+     * @param array $a
+     *            first record
+     * @param array $b
+     *            second record
+     * @param bool $echo_diff
+     *            set true to echo any detected difference.
+     * @return boolean true, if equal, else false.
+     */
+    public function values_are_equal (array $a, array $b, bool $echo_diff)
+    {
+        // check all $a values
+        foreach ($a as $key => $value) {
+            // check for missing $b value
+            if (! isset($b[$key]) && ! is_null($b[$key])) {
+                if ($echo_diff)
+                    echo "<br>Missing key: '" . $key . "'<br>";
+                return false;
+            }
+            // check for identical null values - null is equivalent to ""
+            if (is_null($a[$key]) || (strlen(strval($a[$key])) == 0)) {
+                if (! is_null($b[$key]) && (strlen(strval($b[$key])) > 0)) {
+                    if ($echo_diff)
+                        echo "<br>Null mismatch for key: '" . $key . "'<br>";
+                    return false;
+                }
+            } else {
+                // conpare existing as String, because the SQL data interface also provides Strings
+                if (strcmp(strval($a[$key]), strval($b[$key])) !== 0) {
+                    if ($echo_diff)
+                        echo "<br>Value mismatch for key: '" . $key . "'<br>";
+                    return false;
+                }
+            }
+        }
+        // check for extra $b values
+        foreach ($b as $key => $value) {
+            if (! isset($a[$key]) && ! is_null($a[$key])) {
+                if ($echo_diff)
+                    echo "<br>Extra key: '" . $key . "'<br>";
+                return false;
+            }
+        }
+        // everything's fine.
+        return true;
+    }
+
+    /**
      * Remove all fields from the record and create a "deleted record" to memorize deletion. In order to work,
      * the record must contain all its data fields. The following fields are NOT deleted:
      * Efa_tables::$key_fields, 'ecrid', 'InvalidFrom', Efa_audit::$assert_not_empty. 'ChangeCount' is
@@ -1008,13 +1085,13 @@ class Efa_tables
         foreach ($record as $key => $value) {
             if (in_array($key, self::$key_fields[$tablename]) || (strcasecmp($key, "ecrid") == 0) ||
                      (strcasecmp($key, "InvalidFrom") == 0) ||
-                     in_array($key, Efa_audit::$assert_not_empty[$tablename]))
+                     in_array($key, Efa_audit::$assert_not_empty[$tablename])) {
                 // keep relevant values
                 $record_emptied[$key] = $record[$key];
-            elseif ((strcasecmp($key, "LastModification") == 0) && (strcasecmp($value, "delete") != 0))
+            } elseif ((strcasecmp($key, "LastModification") == 0) && (strcasecmp($value, "delete") != 0)) {
                 // register change if last modification was not delete
                 $changes_needed = true;
-            elseif ((strcasecmp($key, "ecrhis") == 0) && (strlen($value) > 0)) {
+            } elseif ((strcasecmp($key, "ecrhis") == 0) && (strlen($value) > 0)) {
                 // ensure the history is removed instead of continued, when the socket executes the
                 // modification.
                 $record_emptied[$key] = "REMOVE!";
@@ -1025,23 +1102,20 @@ class Efa_tables
                 // register change and clear value, if it still exists, except for ChangeCount,
                 // LastModification, LastModified, and those which must not be empty; because they will never
                 // be empty.
-                if (strlen($record[$key]) > 0) {
-                    if (in_array($key, Efa_tables::$int_fields[$tablename])) {
-                        $record_emptied[$key] = 0; // integer values must not be ""
-                        $changes_needed = $changes_needed || (intval($record[$key]) != 0);
-                    } else {
-                        $record_emptied[$key] = "";
-                        $changes_needed = true;
-                    }
+                if (in_array($key, Efa_tables::$int_fields[$tablename])) {
+                    $record_emptied[$key] = 0; // integer values must not be ""
+                    $changes_needed = $changes_needed || (intval($record[$key]) != 0);
+                } else {
+                    $record_emptied[$key] = "";
+                    $changes_needed = true;
                 }
+            } else {
+                $record_emptied[$key] = (in_array($key, Efa_tables::$int_fields[$tablename])) ? 0 : "";
             }
         }
         if (! $changes_needed)
             return false;
-        // update the last modification event
-        $record_emptied["ChangeCount"] = intval($record["ChangeCount"]) + 1;
-        $record_emptied["LastModified"] = time() . "000";
-        $record_emptied["LastModification"] = "delete";
+        $record = $this->register_modification($record, time(), $record["ChangeCount"], "delete");
         return $record_emptied;
     }
 
@@ -1057,6 +1131,8 @@ class Efa_tables
      *            the table out of which the record shall be deleted.
      * @param array $record_or_key
      *            record, or at least the key of the record which shall be deleted.
+     * @param bool $register_modification
+     *            set false to keep ChangeCount, LastModified and LastModifiction. Default is true
      */
     public function api_delete (array $client_verified, String $tablename, array $record_or_key)
     {
@@ -1669,114 +1745,5 @@ class Efa_tables
         if (strlen($name) > 0)
             $name = substr($name, 0, strlen($name) - 1);
         return $name;
-    }
-
-    /**
-     * Read the types.efa2types file and convert it to a csv file
-     * 
-     * @param String $types_xml
-     *            the xml encoded efa2types which shall be converted
-     */
-    public function types_xml2csv (String $types_xml)
-    {
-        // read table, header and data
-        include_once '../classes/tfyh_xml.php';
-        $tfyh_xml = new Tfyh_xml();
-        $efa_root = $tfyh_xml->read_xml($types_xml);
-        
-        // write header to file
-        $efa_header = $efa_root->get_first_child("header");
-        $efa_type = $efa_header->get_first_child("type")->txt_o;
-        $header_file = "";
-        foreach ($tfyh_xml->xml_lines($efa_header, "") as $line) {
-            $header_file .= $line . "\n";
-        }
-        $ccfg_path = "../config/client_cfg";
-        mkdir($ccfg_path);
-        file_put_contents($ccfg_path . "/types.definition", $header_file);
-        
-        // read and write data to the csv table
-        $efa_data = $efa_root->get_first_child("data");
-        $type_records = $efa_data->get_children("record");
-        $cnt_records = count($type_records);
-        $header_line = true;
-        $csv = "";
-        foreach ($type_records as $record) {
-            $values = "";
-            foreach ($record->children as $field) {
-                // Note: the database expects UTF-8 keys and values. The XML values were
-                // UTF-8, but when read are changed to PHP-default encoding.
-                if ($header_line)
-                    $csv .= $field->id . ";";
-                $values .= $this->toolbox->encode_entry_csv(trim($field->txt_o)) . ";";
-            }
-            if ($header_line && (strlen($csv) > 0)) {
-                $csv = substr($csv, 0, strlen($csv) - 1) . "\n";
-            }
-            $header_line = false;
-            if (strlen($values) > 0)
-                $csv .= substr($values, 0, strlen($values) - 1) . "\n";
-        }
-        file_put_contents($ccfg_path . "/types.csv", $csv);
-    }
-
-    /**
-     * Read the <project>.efa2project file and convert it to a csv file
-     * 
-     * @param String $project_xml
-     *            the xml encoded efa2project which shall be converted
-     */
-    public function project_xml2csv (String $project_xml)
-    {
-        // read table, header and data
-        include_once '../classes/tfyh_xml.php';
-        $tfyh_xml = new Tfyh_xml();
-        $efa_root = $tfyh_xml->read_xml($project_xml);
-        
-        // write header to file
-        $efa_header = $efa_root->get_first_child("header");
-        $efa_type = $efa_header->get_first_child("type")->txt_o;
-        $header_file = "";
-        foreach ($tfyh_xml->xml_lines($efa_header, "") as $line) {
-            $header_file .= $line . "\n";
-        }
-        $ccfg_path = "../config/client_cfg";
-        mkdir($ccfg_path);
-        file_put_contents($ccfg_path . "/project.definition", $header_file);
-        
-        // read project data
-        $efa_data = $efa_root->get_first_child("data");
-        $project_records = $efa_data->get_children("record");
-        $cnt_records = count($project_records);
-        $csv_columns = [];
-        $csv_records = [];
-        foreach ($project_records as $record) {
-            $csv_record = [];
-            foreach ($record->children as $field) {
-                // Note: the database expects UTF-8 keys and values. The XML values were
-                // UTF-8, but when read are changed to PHP-default encoding.
-                if (! in_array($field->id, $csv_columns))
-                    $csv_columns[] = $field->id;
-                $csv_record[$field->id] = trim($field->txt_o);
-            }
-            $csv_records[] = $csv_record;
-        }
-        
-        // write csv headline
-        $csv = "";
-        foreach ($csv_columns as $csv_column)
-            $csv .= $csv_column . ";";
-        $csv = substr($csv, 0, strlen($csv) - 1) . "\n";
-        // write csv record data
-        foreach ($csv_records as $csv_record) {
-            foreach ($csv_columns as $csv_column) {
-                if (isset($csv_record[$csv_column]))
-                    $csv .= $this->toolbox->encode_entry_csv($csv_record[$csv_column]) . ";";
-                else
-                    $csv .= ";";
-            }
-            $csv = substr($csv, 0, strlen($csv) - 1) . "\n";
-        }
-        file_put_contents($ccfg_path . "/project.csv", $csv);
     }
 }

@@ -1,3 +1,9 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
 var bTrip = {
 
 	buttonEndTrip : '<div class="w3-row"><div class="w3-col l1">'
@@ -52,7 +58,7 @@ var bTrip = {
 	 */
 	shortDescription : function(trip) {
 		return trip.EntryId + "=" + "#" + trip.EntryId + " "
-				+ bToolbox.dateISO2DE(trip.Date) + " - "
+				+ cToolbox.dateISO2DE(trip.Date) + " - "
 				+ bTrip.getBoatName(trip) + ", "
 				+ bTrip.getDestinationName(trip)
 	},
@@ -69,7 +75,7 @@ var bTrip = {
 		}
 		if (crew.length > 2)
 			crew = crew.substring(0, crew.length - 2);
-		return trip.EntryId + ": " + bToolbox.dateISO2DE(trip.Date) + " "
+		return trip.EntryId + ": " + cToolbox.dateISO2DE(trip.Date) + " "
 				+ trip.StartTime.substring(0, 5) + " - "
 				+ bTrip.getBoatName(trip) + ", "
 				+ bTrip.getDestinationName(trip) + " (" + trip.Distance
@@ -81,10 +87,10 @@ var bTrip = {
 	 * Format a single trip for the logbook display (HTML).
 	 */
 	formatTrip : function(trip, full) {
-		var startAndEnd = bToolbox.dateISO2DE(trip["Date"]) + " "
+		var startAndEnd = cToolbox.dateISO2DE(trip["Date"]) + " "
 				+ trip["StartTime"].substring(0, 5);
 		if (trip["EndDate"] && trip["EndDate"].length > 1)
-			startAndEnd += "<br>bis " + bToolbox.dateISO2DE(trip["EndDate"])
+			startAndEnd += "<br>bis " + cToolbox.dateISO2DE(trip["EndDate"])
 					+ " " + trip["EndTime"].substring(0, 5);
 		else if (trip["EndTime"] && trip["EndTime"].length > 1)
 			startAndEnd += " - " + trip["EndTime"].substring(0, 5);
@@ -212,8 +218,8 @@ var bTrip = {
 		if (trip["StartTime"])
 			record["StartTime"] = trip["StartTime"].substring(0, 5);
 		if (setEndNow) {
-			record["EndDate"] = bToolbox.dateNow();
-			record["EndTime"] = bToolbox.timeNow().substring(0, 5);
+			record["EndDate"] = cToolbox.dateNow();
+			record["EndTime"] = cToolbox.timeNow().substring(0, 5);
 		}
 		return record;
 	},
@@ -280,7 +286,7 @@ var bTrip = {
 		s += "</tbody></table>";
 		var endButton = bTrip.buttonEndTrip.replace("[EntryId]", ""
 				+ trips[0].EntryId);
-		bModal.showHtml(s + endButton);
+		cModal.showHtml(s + endButton);
 	},
 
 	/**

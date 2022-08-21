@@ -16,8 +16,8 @@ $menu = new Tfyh_menu("../config/access/wmenu", $toolbox);
 setcookie("tfyhUserID", $_SESSION["User"][$toolbox->users->user_id_field_name], 0);
 setcookie("tfyhSessionID", session_id(), 0);
 
-$cfg = $toolbox->config->get_cfg();
-$current_logbook = str_replace("JJJJ", date("Y"), $cfg["current_logbook"]);
+include_once "../classes/efa_config.php";
+$efa_config = new Efa_config($toolbox);
 
 // ===== start page output
 // start with boathouse header, which includes the set of javascript references needed.
@@ -25,21 +25,15 @@ echo file_get_contents('../config/snippets/page_01_start');
 echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
 ?>
-<!-- The Modal -->
-<div id="bModal" class="modal" style="z-index: 4">
-	<!-- Modal content -->
-	<div id="bModal_content" class="modal-content">
-		<span class="close">&times;</span>
-		<p>Some text in the Modal.</p>
-	</div>
-</div>
-<span style='display:none;' class='current-logbook' id='<?php echo $current_logbook; ?>'></span>
+<span style='display: none;' class='current-logbook'
+	id='<?php echo $efa_config->current_logbook; ?>'></span>
+<span style='display: none;' class='sports-year-start'
+	id='<?php echo $efa_config->sports_year_start; ?>'></span>
 <!-- Projects grid (4 columns, 1 row; images must have the same size)-->
 <!-- Display grid (2 columns)-->
 <div class='w3-row'>
 	<div class="w3-container" id="bths-headerpanel">
-		<div class="w3-col l1">
-		</div>
+		<div class="w3-col l1"></div>
 	</div>
 </div>
 <div class='w3-row'>
@@ -70,6 +64,8 @@ echo file_get_contents('../config/snippets/page_02_nav_to_body');
 </div>
 
 <?php
+// pass information to Javascript.
+// User information
 if (isset($_SESSION["User"])) {
     $script = "\n\n<script>\nvar currentUserAtServer = {\n";
     foreach ($_SESSION["User"] as $key => $value) {
@@ -80,4 +76,27 @@ if (isset($_SESSION["User"])) {
     $script .= "};\n</script>\n\n";
     echo $script;
 }
+
+// pass on configurations which are stored as csv file.
+function pass_on_cfg (String $cfg_filename, String $cfg_varname)
+{
+    // read configuration as was stored by the client
+    $config_file = "../config/client_cfg/" . $cfg_filename;
+    if (file_exists($config_file))
+        $config_contents = file_get_contents($config_file);
+    // on no success read default
+    if (! file_exists($config_file) || (strlen($config_contents) < 10)) {
+        $config_file_default = "../config/client_cfg_default/" . $cfg_filename;
+        $config_contents = file_get_contents($config_file_default);
+    }
+    echo "\n<script>\nvar $cfg_varname = `";
+    echo $config_contents;
+    echo "`;\n";
+    echo "</script>\n";
+}
+
+// client types configuration
+pass_on_cfg("types.csv","efaTypes");
+pass_on_cfg("project.csv","efaProjectCfg");
+
 echo file_get_contents('../config/snippets/page_03_footer_bths');

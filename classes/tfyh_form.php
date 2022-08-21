@@ -497,6 +497,8 @@ class Tfyh_form
         foreach ($this->form_definition as $f) {
             $this->labels[$f["name"]] = $f["label"];
             $value = (isset($_POST[$f["name"]])) ? $_POST[$f["name"]] : "";
+            // trim value to avoid peceeding or trailing blanks
+            $value = trim($value);
             // replacements to prevent from sql-injection and cross side
             // scripting.
             if ($replace_insecure_chars !== false)

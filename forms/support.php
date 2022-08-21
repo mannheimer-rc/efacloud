@@ -79,10 +79,11 @@ echo $toolbox->form_errors_to_html($form_errors);
 // ======== start with the display of either the next form, or the error messages.
 if ($todo == 1) {
     ?>
-	<p>Bitte lassen Sie mich Ihr Anliegen wissen. Ich versuche sobald wie
-		möglich zu helfen. In Urlaubszeiten kann es dabei schon mal zu
-		Verzögerungen kommen, normalerweise ist eine Antwort in etwa einer
-		Woche zu erwarten.</p>
+	<p>Bitte lass mich Dein Anliegen oder einen Wunsch an die
+		Funktionalität von efaCloud wissen. Ich versuche sobald wie möglich zu
+		helfen. In Urlaubszeiten kann es dabei schon mal zu Verzögerungen
+		kommen, normalerweise ist eine Antwort in etwa einer Woche zu
+		erwarten.</p>
 	<p>Ich freue mich auch über Feedback zu efaCloud, Anregungen und
 		Wünsche. Dieses Formular geht an 'efacloud.org'.</p>
 <?php

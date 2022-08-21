@@ -1,7 +1,13 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * A generic toolbox for the efacloud_bths program
  */
-var bToolbox = {
+var cToolbox = {
 		
 	// localization
 	_i18n : [],
@@ -21,7 +27,7 @@ var bToolbox = {
 		getRequest.timeout = $_apiTimeoutMillis;
 		// provide the callback for a response received
 		getRequest.onload = function() {
-			var allTexts = bToolbox.readCsv(getRequest.response, false);
+			var allTexts = cToolbox.readCsv(getRequest.response, false);
 			var cl = 0;
 			for (var c = 1; c < allTexts[0].length; c++)
 				if (allTexts[0][c].localeCompare(localeToUse) == 0)
@@ -30,7 +36,7 @@ var bToolbox = {
 			var header = true;
 			allTexts.forEach(function(row) {
 				if (!header)
-					bToolbox._i18n[row[0]] = row[cl];
+					cToolbox._i18n[row[0]] = row[cl];
 				header = false;
 			});
 		};
@@ -77,7 +83,7 @@ var bToolbox = {
 	},
 
 	/**
-	 * Wait function. call with "await bToolbox.sleep(1000) e.g. see
+	 * Wait function. call with "await cToolbox.sleep(1000) e.g. see
 	 * https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
 	 */
 	sleep:function(ms) {
@@ -213,20 +219,20 @@ var bToolbox = {
 		if (associative) {
 			var keys = []
 			for (var key in table.rows[0]) {
-				csvstring += bToolbox.encodeCsvEntry(key) + ";";
+				csvstring += cToolbox.encodeCsvEntry(key) + ";";
 				keys.push(key);
 			}
 			csvstring = csvstring.substring(0, csvstring.length - 1) + "\n";
 			table.rows.forEach(function(row) {
 				keys.forEach(function(key) {
-					csvstring += bToolbox.encodeCsvEntry(row[key]) + ";";
+					csvstring += cToolbox.encodeCsvEntry(row[key]) + ";";
 				});
 				csvstring = csvstring.substring(0, csvstring.length - 1) + "\n";
 			});
 		} else {
 			table.rows.forEach(function(row) {
 				row.forEach(function(entry) {
-					csvstring += bToolbox.encodeCsvEntry(entry) + ";";
+					csvstring += cToolbox.encodeCsvEntry(entry) + ";";
 				});
 				csvstring = csvstring.substring(0, csvstring.length - 1) + "\n";
 			});
@@ -262,7 +268,7 @@ var bToolbox = {
 			return text;
 		// replace the html reserved characters
         return text.replace(/[&<>"']/g, function(m) { 
-        	return bToolbox._escapeHtmlMap[m]; 
+        	return cToolbox._escapeHtmlMap[m]; 
         });
 	},
 
@@ -494,13 +500,13 @@ var bToolbox = {
 };
 
 // initialize interationalization.
-bToolbox.i18n_init($_locale);
+cToolbox.i18n_init($_locale);
 
 // Call this function to get the proper translation of your texts. Up to 5
 // non-transaltable
 // arguments can be used within the text.
 function _(key, ...args) {
-	var text = bToolbox._i18n[key];
+	var text = cToolbox._i18n[key];
 	if (!text) text = "[" + key + "]";
 	if (args) return text;
 	if (args.length > 0)

@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * Handle the display of forms, and apply he necessary logic to the results
  * provided. For each form the is a form_do and a form_done function. The
  * form_do prepares the form and shows it to the user, the form_done is called
@@ -16,7 +22,7 @@ var bFormHandler = {
 	changeLogbook_do : function() {
 		bForm.init("changeLogbook", "efa2logbook", 0);
 		bForm.presetValue("logbookname", $_logbookname);
-		bModal.showForm(true);
+		cModal.showForm(true);
 	},
 
 	/**
@@ -41,7 +47,7 @@ var bFormHandler = {
 		if (preset)
 			for (key in preset)
 				bForm.presetValue(key, preset[key]);
-		bModal.showForm(false);
+		cModal.showForm(false);
 
 		var input = $("#bFormInput-BoatId")[0];
 		var options = Object.keys(bLists.names.efaWeb_boats_names);
@@ -86,7 +92,7 @@ var bFormHandler = {
 
 		// Add Date, Time and Open flag
 		record["Date"] = bForm.inputs["Date"];
-		var startTime = bToolbox.format_efa_time(bForm.inputs["StartTime"])
+		var startTime = cToolbox.format_efa_time(bForm.inputs["StartTime"])
 				.substring(0, 5);
 		record["StartTime"] = startTime;
 		record["Open"] = "true";
@@ -96,7 +102,7 @@ var bFormHandler = {
 		bPerson.guidsToNamesForInvalidPersons(record);
 
 		// add ecrid, ChangeCount and LastModified
-		record["ecrid"] = bToolbox.generateEcrid();
+		record["ecrid"] = cToolbox.generateEcrid();
 		record["ChangeCount"] = 1;
 		record["LastModified"] = Date.now();
 
@@ -123,7 +129,7 @@ var bFormHandler = {
 			return;
 		}
 
-		bModal.showForm(false);
+		cModal.showForm(false);
 
 		var input = $("#bFormInput-BoatId")[0];
 		var options = Object.keys(bLists.names.efaWeb_boats_names);
@@ -166,7 +172,7 @@ var bFormHandler = {
 
 		// Add Date, Time and Open flag
 		record["Open"] = "false";
-		record["EndTime"] = bToolbox.format_efa_time(bForm.inputs["EndTime"])
+		record["EndTime"] = cToolbox.format_efa_time(bForm.inputs["EndTime"])
 				.substring(0, 5);
 		if (!bForm.inputs["EndDate"]
 				|| (bForm.inputs["EndDate"].localeCompare(record["Date"]) == 0))
@@ -194,10 +200,10 @@ var bFormHandler = {
 	 */
 	postDamage_do : function() {
 		bForm.init("postDamage", "efaWeb_boatdamages", 0);
-		bForm.presetValue("ReportDate", bToolbox.dateNow());
-		bForm.presetValue("ReportTime", bToolbox.timeNow());
+		bForm.presetValue("ReportDate", cToolbox.dateNow());
+		bForm.presetValue("ReportTime", cToolbox.timeNow());
 		bForm.presetValue("Claim", "");
-		bModal.showForm(false);
+		cModal.showForm(false);
 		var input = $("#bFormInput-BoatId")[0];
 		var options = Object.keys(bLists.names.efaWeb_boats_names);
 		autocomplete(input, options, "efaWeb_boats");
@@ -230,7 +236,7 @@ var bFormHandler = {
 					.logbookText(bLists.lists.efaWeb_logbook[logbookRow]);
 
 		// add ecrid, ChangeCount and LastModified
-		record["ecrid"] = bToolbox.generateEcrid();
+		record["ecrid"] = cToolbox.generateEcrid();
 		record["ChangeCount"] = 1;
 		record["LastModified"] = Date.now();
 
@@ -248,7 +254,7 @@ var bFormHandler = {
 	 */
 	readDamage_do : function() {
 		bForm.init("readDamage", "efaWeb_boatdamages", 0);
-		bModal.showForm(false);
+		cModal.showForm(false);
 		var input = $("#bFormInput-BoatId")[0];
 		var options = Object.keys(bLists.names.efaWeb_boats_names);
 		autocomplete(input, options, "efaWeb_boats");
@@ -281,10 +287,11 @@ var bFormHandler = {
 					.forEach(function(row) {
 						if ((!row["Fixed"] || bFormHandler.processedData["AlsoDone"])
 								&& ((row["BoatId"]
-										.localeCompare(bFormHandler.processedData["BoatId"]) == 0))) {
+										.localeCompare(bFormHandler.processedData["BoatId"]) == 0))
+										&&(row["LastModification"].localeCompare("delete") != 0)) {
 							damages += "<p><b>Schaden #" + row["Damage"]
 									+ "</b> "
-									+ bToolbox.dateISO2DE(row["ReportDate"])
+									+ cToolbox.dateISO2DE(row["ReportDate"])
 									+ "<br>";
 							boatName = bLists.lists.efaWeb_boats[bLists.indices.efaWeb_boats_guids[row["BoatId"]]]["Name"];
 							damages += "Boot: <b>" + boatName
@@ -295,7 +302,7 @@ var bFormHandler = {
 									+ "<br>";
 							damages += "<b>Behoben</b>: "
 									+ ((row["Fixed"]) ? "am "
-											+ bToolbox
+											+ cToolbox
 													.dateISO2DE(row["FixDate"])
 											: "nein.") + "</p><hr>";
 							i++;
@@ -303,7 +310,7 @@ var bFormHandler = {
 					});
 		if (i == 0)
 			damages += "<p>keine offenen Schäden.</p>";
-		bModal.showHtml(damages);
+		cModal.showHtml(damages);
 	},
 
 	/**
@@ -311,7 +318,7 @@ var bFormHandler = {
 	 */
 	postMessage_do : function() {
 		bForm.init("postMessage", "efaWeb_messages", 0);
-		bModal.showForm(false);
+		cModal.showForm(false);
 		var input = $("#bFormInput-From")[0];
 		var options = Object.keys(bLists.names.efaWeb_persons_names);
 		autocomplete(input, options, "efaWeb_persons");
@@ -326,11 +333,11 @@ var bFormHandler = {
 		var fromId = bLists.names.efaWeb_persons_names[record["From"]];
 		if (fromId)
 			record["From"] = fromId;
-		record["Date"] = bToolbox.dateNow();
-		record["Time"] = bToolbox.timeNow();
+		record["Date"] = cToolbox.dateNow();
+		record["Time"] = cToolbox.timeNow();
 
 		// add ecrid, ChangeCount and LastModified
-		record["ecrid"] = bToolbox.generateEcrid();
+		record["ecrid"] = cToolbox.generateEcrid();
 		record["ChangeCount"] = 1;
 		record["LastModified"] = Date.now();
 
@@ -348,7 +355,7 @@ var bFormHandler = {
 	 */
 	bookAboat_do : function() {
 		bForm.init("bookAboat", "efaWeb_boatreservations", 0);
-		bModal.showForm(false);
+		cModal.showForm(false);
 		var input = $("#bFormInput-PersonId")[0];
 		var options = Object.keys(bLists.names.efaWeb_persons_names);
 		autocomplete(input, options, "efaWeb_persons");
@@ -370,7 +377,7 @@ var bFormHandler = {
 		record["BoatId"] = boatId;
 
 		// add ecrid, ChangeCount and LastModified
-		record["ecrid"] = bToolbox.generateEcrid();
+		record["ecrid"] = cToolbox.generateEcrid();
 		record["ChangeCount"] = 1;
 		record["LastModified"] = Date.now();
 

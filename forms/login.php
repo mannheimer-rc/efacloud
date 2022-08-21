@@ -232,15 +232,15 @@ if ($done > 0) {
                     $login_failures = 1;
                 $_SESSION["login_failures"] = $login_failures;
                 if ($login_failures > 0) {
-                    $toolbox->load_throttle("errors/", $toolbox->config->settings_tfyh["init"]["max_errors_per_hour"]);
+                    $toolbox->load_throttle("errors", $toolbox->config->settings_tfyh["init"]["max_errors_per_hour"], $user_requested_file);
+                    $toolbox->logger->log_init_login_error("error");
                     $form_errors .= "Fehler beim login.<br>Bereits " . $login_failures .
                              " Fehlversuche. Bitte noch einmal versuchen, " .
                              "aber mit jedem Versuch dauert es länger.</p>";
+                    $toolbox->logger->log(1, $appUserID,
+                            "Falsches Kennwort beim login.");
                     // try and eroor will become slower and slower.
                     sleep(2 * $login_failures);
-                    $toolbox->logger->log(1, $appUserID, 
-                            "Falsches Kennwort beim login.");
-                    $toolbox->logger->log_init_login_error("error");
                 }
             }
     } elseif ($done === 2) {

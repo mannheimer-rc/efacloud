@@ -1,3 +1,9 @@
+/**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
 var bReservation = {
 	
 	// format the reservation as String
@@ -14,7 +20,7 @@ var bReservation = {
 	getConflictingReservation : function(reservationToCompare) {
 		var startToCompare = Date.parse(reservationToCompare["DateFrom"] + " " + reservationToCompare["TimeFrom"]);
 		var endToCompare = Date.parse(reservationToCompare["DateTo"] + " " + reservationToCompare["TimeTo"]);
-		var boatIdToCompare = (bToolbox.isGUID(reservationToCompare.BoatId)) ? reservationToCompare.BoatId :
+		var boatIdToCompare = (cToolbox.isGUID(reservationToCompare.BoatId)) ? reservationToCompare.BoatId :
 			bLists.names.efaWeb_boats_names[reservationToCompare.BoatId];
 		for (reservation of bLists.lists.efaWeb_boatreservations) {
 			if (reservation.BoatId && reservation.BoatId.localeCompare(boatIdToCompare) == 0) {

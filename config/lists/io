@@ -1,0 +1,20 @@
+id;permission;name;select;from;where;options
+1;Verwalter;Mitgliederliste; \
+  ID,Mitgliedsnummer,Anrede,Titel,Vorname,Nachname,Zusatzadresse,Strasse,Plz,Ort,Geburtsdatum,Geschlecht, \
+  Telefon_privat,Telefon_dienstlich,Handy,EMail,BerufSchule,Eintritt,Austritt,Zahlungsart,Kontoinhaber, \
+  Einmalbetrag,Sonstiges,Anzahl_Zeitschr,Subskriptionen,Abteilung,Beitragsart,Zahlweise,Rolle,IBAN,SEPA_Datum_Mandatsref, \
+  SEPA_Kz_Ausfuehrung,Passwort_Hash,Ruderkurs,Ruderreferenz,WochentageTraining,Schwimmabzeichen,efaGUID,VereinVorher, \
+  VereinVorherZeit,Erziehungsberechtigter_1,Erziehungsberechtigter_2,Datenschutzeinwilligung,Mitteilungen;Mitgliederliste; \
+  1;sort=Mitgliedsnummer
+2;Verwalter;Funktionen;ID,Mitgliedsnummer,Funktion,Beginn,Ende;Funktionen;1;sort=Mitgliedsnummer
+3;Verwalter;Ehrungen;ID,Mitgliedsnummer,Ehrung,Zeitpunkt;Ehrungen;1;sort=Zeitpunkt
+4;Verwalter;Spinde;ID,Spindnummer,Ort,Mitgliedsnummer,Seit,BesondereVerwendung,Bemerkungen;Spinde;1;sort=Spindnummer
+5;Verwalter;Parameter;ID,Name,Wert;Parameter;1;sort=ID
+6;Verwalter;Beitragsart;ID,Schluessel,Bezeichner,Monatsbetrag;Beitragsart;1;sort=ID
+7;Verwalter;SPG-Verein - AUSSCHLIESSLICH EXPORT;$SPG-Verein-Export;Mitgliederliste;1;sort=ID
+8;Verwalter;Mitgliederarchiv - AUSSCHLIESSLICH EXPORT;ID,Mitgliedsnummer,Vorname,Nachname,Eintritt,Austritt;Mitgliederarchiv;1;sort=ID
+9;Verwalter;Reservierungen; \
+  ID,Mitgliedsnummer,AngefragtAm,Angefragt,VerwendungFuer,VerwendungStartTag,VerwendungStartStunde,VerwendungEndeTag, \
+  VerwendungEndeStunde,BestaetigtVon,BestaetigtAm,StorniertVon,StorniertAm;Reservierungen;1;sort=ID
+10;Verwalter;Veranstaltungen;ID,Verantwortlich,Bezeichnung,Kategorie,Datum,Storno,BeginnStunde,BeginnMinute,DauerMinuten,Plaetze;Veranstaltungen;1;sort=ID
+11;@64;Buchungen;ID,VeranstaltungID,Vorname,Nachname,Telefon,EMail,Mitgliedsnummer,BuchungAm,BegruesstAm;Buchungen;1;sort=Nachname

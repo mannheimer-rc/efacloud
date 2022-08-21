@@ -1,0 +1,8 @@
+tags;required;name;value;label;type;class;size;maxlength
+
+<div class='w3-row'><div class='w3-col l2'>;;Name;;Name;text;;20;50
+</div><div class='w3-col l2'>;;Details;;Details;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;EfbId;;EfbId;text;;20;50
+
+<li><span class='helptext'>;;_help_text;;Die Datenänderung wirkt im efaCloud Server sofort, in angebundenen efa-PCs erst nach der nächsten Synchronisation.;;;;
+</span></li>;;_help_text;;;;;;

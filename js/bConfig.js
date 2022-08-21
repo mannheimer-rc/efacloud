@@ -1,4 +1,10 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * The full applicatiuon configuration, in particular all forms.
  */
 var $_formTemplates = {
@@ -42,7 +48,7 @@ var $_formTemplates = {
 </div></div><div class='w3-row'><div class='w3-col l2'>;*;DestinationId;;Ziel;text;;18;50
 </div><div class='w3-col l2'>;;WatersIdList;;Gewässer;text;;15;50
 </div></div><div class='w3-row'><div class='w3-col l2'>;*;Distance;;Entfernung (z. B. 12 km);text;;18;50
-</div><div class='w3-col l2'>;;SessionType;;Art der Fahrt;"select NORMAL=normale Fahrt;TRAININGSCAMP=Trainingsfahrt;REGATTA=Regatta;LATEENTRY=km-Nachtrag";;15;50
+</div><div class='w3-col l2'>;;SessionType;;Art der Fahrt;"select use:SessionTypes";;15;50
 </div></div><div class='w3-row'><div class='w3-col l1'>;;Comments;;Bemerkungen;textarea;;2;90%
 </div></div><div class='w3-row'><div class='w3-col l1'>;;_no_input;;<br>;;;;
 </div></div><div class='w3-row'><div class='w3-col l1'>;;submit;Fahrt beginnen;;submit;formbutton;;
@@ -144,17 +150,49 @@ var $_formTemplates = {
 var $_formNames = [];
 var $_formDefs = {};
 for (var key in $_formTemplates) {
-	$_formDefs[key] = bToolbox.readCsvList($_formTemplates[key]);
+	$_formDefs[key] = cToolbox.readCsvList($_formTemplates[key]);
 	$_formNames.push(key);
 }
 
-var $_seatCntText = {
-		1 : "Einer, Skiff",
-		2 : "Zweier",
-		3 : "Dreier, Zweier mit",
-		4 : "Vierer, Dreier mit",
-		5 : "Fünfer, Vierer mit",
-		6 : "Sechser, Fünfer mit",
-		9 : "Achter mit"
+// parse the csv lists for efa configuration.
+const $_efaTypesList = cToolbox.readCsvList(efaTypes);
+var $_efaTypesArray = {};
+$_efaTypesList.forEach(function(efaType) {
+	if (!$_efaTypesArray[efaType["Category"]])
+		$_efaTypesArray[efaType["Category"]] = [];
+	$_efaTypesArray[efaType["Category"]].push({
+			Position : parseInt(efaType["Position"]),
+			Type : efaType["Type"],
+			Value : efaType["Value"]
+	});
+});
+var $_efaTypes = {};
+for ($_efaTypesCategory in $_efaTypesArray) {
+	$_efaTypesArray[$_efaTypesCategory].sort(function(a, b) { return a.Position - b.Position; });
+	$_efaTypes[$_efaTypesCategory] = {};
+	$_efaTypesArray[$_efaTypesCategory].forEach(function(efaType) {
+		$_efaTypes[$_efaTypesCategory][efaType["Type"]] = efaType["Value"];
+	});
 }
+
+const $_efaProjectCfg = cToolbox.readCsvList(efaProjectCfg);
+var $efa_project = {};
+$_efaProjectCfg.forEach(function(projectCfg) {
+	$efa_project[projectCfg["Type"]] = {};
+	for (efaProjectDetail in projectCfg) {
+		if ((projectCfg[efaProjectDetail].length > 0) && (efaProjectDetail.localeCompare("Type") != 0))
+			$efa_project[projectCfg["Type"]][efaProjectDetail] = projectCfg[efaProjectDetail]; 
+	}
+})
+
+// efa Client settings
+var current_logbook_element = $('.current-logbook')[0];
+var $_logbookname = ($efa_project["CurrentLogbookEfaBoathouse"]) ? $efa_project["CurrentLogbookEfaBoathouse"] : $(current_logbook_element).attr('id');
+var sports_year_start_element = $('.sports-year-start')[0];
+var $_sports_year_start = $(sports_year_start_element).attr('id');
+var $_clubname = $efa_project["Club"]["ClubName"];
+
+// Parameter for select fields in forms
+var $_params = {};
+$_params["SessionTypes"] = $_efaTypes["SESSION"];  
 

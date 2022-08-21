@@ -72,8 +72,8 @@ class Tfyh_socket
      */
     function __construct (Tfyh_toolbox $toolbox)
     {
-        $cfg = $toolbox->config->get_cfg();
-        $this->db_name = $cfg["db_name"];
+        $cfg_db = $toolbox->config->get_cfg_db();
+        $this->db_name = $cfg_db["db_name"];
         $this->mysqli = null;
         $this->toolbox = $toolbox;
         $this->debug_on = $toolbox->config->debug_level > 0;
@@ -125,14 +125,15 @@ class Tfyh_socket
         // do nothing, if connection is open.
         if (! is_null($this->mysqli) && $this->mysqli->ping())
             return true;
-        $cfg = $this->toolbox->config->get_cfg();
+        $cfg_db = $this->toolbox->config->get_cfg_db();
         // this will only connect with the correct settings in the settings_db file.
         try {
-            $this->mysqli = new mysqli($cfg["db_host"], $cfg["db_user"], $cfg["db_up"], $this->db_name);
+            $this->mysqli = new mysqli($cfg_db["db_host"], $cfg_db["db_user"], $cfg_db["db_up"], 
+                    $this->db_name);
         } catch (exception $e) {
             return "Data base connection failed: " . $e->getMessage();
         }
-            if ($this->mysqli->connect_error)
+        if ($this->mysqli->connect_error)
             return "Data base connection error: " . $this->mysqli->connect_error . ".";
         $this->mysqli_query("SET NAMES 'UTF8'", "open_socket");
         $ret = $this->mysqli_query("SELECT 1", "open_socket");
@@ -904,7 +905,7 @@ class Tfyh_socket
      *            "#EntryId".
      * @param bool $sort_ascending
      *            set to true to sort in ascending order, false to sort in descending order.
-     * @param bool $start_row
+     * @param int $start_row
      *            (default = 0) set a value > 0 to start not with the first row. Use it for getting chunks
      *            rather than all.
      * @return array of records, each being an array of key = column name and value = value. False in case of
@@ -1491,8 +1492,9 @@ class Tfyh_socket
                 foreach ($fields as $field) {
                     $key_n_value = explode(":", $field, 2);
                     $record_version[$key_n_value[0]] = $key_n_value[1];
+                    $last_value = (isset($last_record_version[$key_n_value[0]])) ? $last_record_version[$key_n_value[0]] : false;
                     if (strlen($key_n_value[1]) > 0) {
-                        if (strcmp($key_n_value[1], $last_record_version[$key_n_value[0]]) != 0) {
+                        if (($last_value == false) || (strcmp($key_n_value[1], $last_value) != 0)) {
                             $lmod_string = (strcasecmp("LastModified", $key_n_value[0]) == 0) ? " [" .
                                      date("d.m.Y H:i:s", intval(substr($key_n_value[1], 0, 10))) . "]" : "";
                             $version_html .= "<tr><td>" . $key_n_value[0] . "</td><td>" .

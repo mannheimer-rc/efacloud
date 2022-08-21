@@ -1,12 +1,18 @@
 /**
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
+ * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
+ */
+
+/**
  * A Modal "window" which is used for all dialogs of the application.
  */
 
-var bModal = {
+var cModal = {
 
 	// reverencing the modal objects
-	modal : document.getElementById('bModal'),
-	modal_content : document.getElementById('bModal_content'),
+	modal : document.getElementById('cModal'),
+	modal_content : document.getElementById('cModal_content'),
 	modal_close : "<span class='closeModal'>&times;</span>",
 
 	// after modal content has changed, events need to be rebound to buttons
@@ -16,7 +22,7 @@ var bModal = {
 			$_current_view = $(this).attr("id");
 			if ($_current_view.substring(0, 4).localeCompare("form") == 0) {
 				var form_id = $_current_view.substring(5, 7);
-				bModal.showForm(form_id);
+				cModal.showForm(form_id);
 			}
 		});
 	},
@@ -25,7 +31,7 @@ var bModal = {
 	// etc.
 	_updateModalCloseBind : function() {
 		$('.closeModal').bind('click', function() {
-			bModal.modal.style.display = "none";
+			cModal.modal.style.display = "none";
 		});
 	},
 
@@ -36,9 +42,9 @@ var bModal = {
 			bForm.readEntered();
 			var formErrors = bForm.checkValidity();
 			if (formErrors && formErrors.length > 1) {
-				bModal.showForm(withHelp);
+				cModal.showForm(withHelp);
 			} else {
-				bModal.modal.style.display = "none";
+				cModal.modal.style.display = "none";
 				// select the handling function by using the form name.
 				bFormHandler[bForm.formName + "_done"]();
 			}
@@ -61,7 +67,7 @@ var bModal = {
 
 	// put an error into the modal 
 	showException : function(e) {
-		bModal.showHtml("Oops, da ist efaWeb leider abgestürzt.<br>Wenn sich das wiederholen lässt, "
+		cModal.showHtml("Oops, da ist efaWeb leider abgestürzt.<br>Wenn sich das wiederholen lässt, "
 				+ "kannst Du der efaWeb Entwicklung helfen mit einem Hinweis auf den Fehler:<br><br>"
 				+ e.stack.replace(/ at /g, "<br>at "));
 	},
@@ -81,6 +87,7 @@ var bModal = {
 
 	// Display some html content within the modal. No buttons.
 	showHtml : function(html) {
+		this.modal_content = document.getElementById('cModal_content');
 		$(this.modal_content).html(this.modal_close + html);
 		// the modal content may now contain a new button, which needs binding.
 		this._updateModalCloseBind();

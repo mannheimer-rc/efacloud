@@ -1,7 +1,7 @@
 id;permission;name;select;from;where;options
 2;member;efaWeb_boatdamages;Damage,BoatId,Severity,Description,Fixed,ChangeCount,ecrid;efa2boatdamages;(ISNULL(Fixed) AND NOT (`efa2boatdamages`.`LastModification` = 'delete'));
 3;member;efaWeb_boatreservations;Reservation,BoatId,DateFrom,DateTo,TimeFrom,TimeTo,Type,Reason,ChangeCount,ecrid;efa2boatreservations;(`LastModified` > {LastModified});
-4;member;efaWeb_boats;Id,InvalidFrom,Name,TypeCoxing,TypeSeats,ecrid;efa2boats;(`LastModified` > {LastModified}) AND (InvalidFrom > 9999999999000);
+4;member;efaWeb_boats;Id,InvalidFrom,Name,TypeCoxing,TypeSeats,TypeRigging,TypeType,ecrid;efa2boats;(`LastModified` > {LastModified}) AND (InvalidFrom > 9999999999000);
 5;member;efaWeb_boatstatus;BoatId,Comment,BaseStatus,CurrentStatus,ShowInList,ChangeCount,ecrid;efa2boatstatus;1;
 6;member;efaWeb_crews;Id,Name,ecrid;efa2crews;(`LastModified` > {LastModified});
 7;member;efaWeb_destinations;Id,Distance,End,InvalidFrom,Name,WatersIdList,ecrid;efa2destinations;(`LastModified` > {LastModified}) AND (InvalidFrom > 9999999999000);

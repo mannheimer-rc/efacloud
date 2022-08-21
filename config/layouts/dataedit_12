@@ -1,0 +1,78 @@
+tags;required;name;value;label;type;class;size;maxlength
+
+<div class='w3-row'><div class='w3-col l2'>;;Date;;Date;date;;10;20
+</div><div class='w3-col l2'>;;EndDate;;EndDate;date;;10;20
+</div></div><div class='w3-row'><div class='w3-col l2'>;;BoatId;;BoatId;select list:dataeditSelect:1+;;20;50
+</div><div class='w3-col l2'>;;BoatVariant;;BoatVariant;text;;10;12
+</div></div><div class='w3-row'><div class='w3-col l2'>;;BoatName;;BoatName;text;;20;50
+</div><div class='w3-col l2'>;;AllCrewNames;;AllCrewNames;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;AllCrewIds;;AllCrewIds;text;;20;50
+</div><div class='w3-col l2'>;;CoxId;;CoxId;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;CoxName;;CoxName;text;;20;50
+</div><div class='w3-col l2'>;;Crew1Id;;Crew1Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew1Name;;Crew1Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew2Id;;Crew2Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew2Name;;Crew2Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew3Id;;Crew3Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew3Name;;Crew3Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew4Id;;Crew4Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew4Name;;Crew4Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew5Id;;Crew5Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew5Name;;Crew5Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew6Id;;Crew6Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew6Name;;Crew6Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew7Id;;Crew7Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew7Name;;Crew7Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew8Id;;Crew8Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew8Name;;Crew8Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew9Id;;Crew9Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew9Name;;Crew9Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew10Id;;Crew10Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew10Name;;Crew10Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew11Id;;Crew11Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew11Name;;Crew11Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew12Id;;Crew12Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew12Name;;Crew12Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew13Id;;Crew13Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew13Name;;Crew13Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew14Id;;Crew14Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew14Name;;Crew14Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew15Id;;Crew15Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew15Name;;Crew15Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew16Id;;Crew16Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew16Name;;Crew16Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew17Id;;Crew17Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew17Name;;Crew17Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew18Id;;Crew18Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew18Name;;Crew18Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew19Id;;Crew19Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew19Name;;Crew19Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew20Id;;Crew20Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew20Name;;Crew20Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew21Id;;Crew21Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew21Name;;Crew21Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew22Id;;Crew22Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew22Name;;Crew22Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew23Id;;Crew23Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew23Name;;Crew23Name;text;;20;50
+</div><div class='w3-col l2'>;;Crew24Id;;Crew24Id;select list:dataeditSelect:3+;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Crew24Name;;Crew24Name;text;;20;50
+</div><div class='w3-col l2'>;;BoatCaptain;1;BoatCaptain;text;;10;12
+</div></div><div class='w3-row'><div class='w3-col l2'>;;StartTime;14:25:00;StartTime;text;;8;10
+</div><div class='w3-col l2'>;;EndTime;15:30:00;EndTime;text;;8;10
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DestinationId;;DestinationId;select list:dataeditSelect:2+;;20;50
+</div><div class='w3-col l2'>;;DestinationName;;DestinationName;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;DestinationVariantName;;DestinationVariantName;text;;20;50
+</div><div class='w3-col l2'>;;WatersIdList;;WatersIdList;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;WatersNameList;;WatersNameList;text;;20;50
+</div><div class='w3-col l2'>;;Distance;;Distance;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Comments;;Comments;textarea;;4;
+</div><div class='w3-col l2'>;;SessionType;;SessionType;text;;20;50
+</div></div><div class='w3-row'><div class='w3-col l2'>;;SessionGroupId;;SessionGroupId;text;;20;50
+</div><div class='w3-col l2'>;;EfbSyncTime;;EfbSyncTime;text;;18;30
+</div></div><div class='w3-row'><div class='w3-col l2'>;;Open;;Open;checkbox;;;
+
+</div></div><div class='w3-row'><div class='w3-col l1'> <br>;;submit;Jetzt ändern;;submit;formbutton;;
+</div></div>;;_no_input;;;;;;
+<li><span class='helptext'>;;_help_text;;Die Datenänderung wirkt im efaCloud Server sofort, in angebundenen efa-PCs erst nach der nächsten Synchronisation.;;;;
+</span></li>;;_help_text;;;;;;
