@@ -32,10 +32,9 @@ if ($done > 0) {
     } elseif ($done == 1) {
         $archived_less_than_days_ago = intval($entered_data["ArchivedLessThanDaysAgo"]);
         if ($archived_less_than_days_ago == 0)
-            $archived_less_than_days_ago = Efa_archive::$max_age_days;
+            $archived_less_than_days_ago = Efa_tables::$forever_days;
         $tablename = $entered_data["Tabelle"];
-        $efa_tables = new Efa_tables($toolbox, $socket);
-        $efa_archive = new Efa_archive($efa_tables, $toolbox, 
+        $efa_archive = new Efa_archive($toolbox, $socket,
                 $_SESSION["User"][$toolbox->users->user_id_field_name]);
         $restore_result = $efa_archive->restore_form_archive($tablename, $archived_less_than_days_ago);
         $todo = $done + 1;
@@ -59,34 +58,14 @@ echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
 
 // page heading, identical for all workflow steps
-?>
-<!-- START OF content -->
-<div class="w3-container">
-	<h3>Archivdaten<sup class='eventitem' id='showhelptext_Archiv'>&#9432</sup> wiederherstellen</h3>
-	<p>Hier können Datensätze einer Tabelle aus dem Archiv
-		wiederhergestellt werden.</p>
-<?php
+echo i("DR7W5h| ** Archive data ** &#94..."); 
 if ($todo == 1) { // step 1. Texts for output
-    ?>
-	<p>Die Zulässigkeit der Wiederherstellung der Datensätze ist im
-		Allgemeinen datenschutzrechtlich zu klären, da die Datensätze
-		automatisch aufgrund der Datenschutzkonfiguration verschoben wurden.</p>
-	<p>Bitte denke daran, auch die Einstellung zur Archivierung anzupassen,
-		sonst werden die Datensätze beim nächsten Nachtlauf unter Umständen wieder archiviert.</p>
-		<?php
+    echo i("53Wfwp| ** The permissibility o..."); 
     echo $toolbox->form_errors_to_html($form_errors);
-    echo $form_to_fill->get_html(true); // enable file upload
-    echo '<h5><br />Ausfüllhilfen</h5><ul>';
+    echo $form_to_fill->get_html();
     echo $form_to_fill->get_help_html();
-    echo "</ul>";
 } elseif ($todo == 2) { // step 2. Texts for output
-    ?>
-	<p>Die Weiderherstellung ist abgeschlossen. Das Ergebnis: <?php echo $restore_result; ?>
-		<br /> <a href="../forms/archiv_wiederherstellen.php">Weitere Daten
-			wiederherstellen</a>.
-	</p>
-<?php
+    echo i("cFCO2q| ** The restore is compl...", $restore_result); 
 }
-?>
-</div><?php
+echo i("mA4mRY|</div>"); 
 end_script();

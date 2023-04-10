@@ -1,6 +1,6 @@
 <?php
 /**
- * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2021 by Nicolas Michael
+ * Title: efa - elektronisches Fahrtenbuch für Ruderer Copyright: Copyright (c) 2001-2022 by Nicolas Michael
  * Website: http://efa.nmichael.de/ License: GNU General Public License v2. Module efaCloud: Copyright (c)
  * 2020-2021 by Martin Glade Website: https://www.efacloud.org/ License: GNU General Public License v2
  */
@@ -14,41 +14,6 @@ echo file_get_contents('../config/snippets/page_01_start');
 echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
 ?>
-
-<!-- Image header -->
-<div class="w3-container">
-	<p style='text-align: right; margin-bottom: -60px; margin-right: 10px;'>
-		<img src="../resources/efaCloud-Wolke_blau.png" alt="cloud"
-			style="width: 20%">
-	</p>
-
-	<h2>
-		<br>Efacloud - efa in der Wolke.
-	</h2>
-	<p>Efa hat eine lange Tradition. Auf dem Weg zur Digitalisierung wird
-		das beliebteste Fahrtenbuch Deutschlands hier um die Möglichkeit
-		ergänzt, die Daten in der Cloud abzulegen. Sicher, von überall
-		zugänglich, konsistent.</p>
-	<p>Diese Oberfläche ist der Einstieg zu efaWeb und efaCloud:</p>
-	<ul>
-		<li>efaCloud
-			<ul>
-				<li>zentrale Verwaltung der Servereinstellung und Fahrtenbuchdaten</li>
-				<li>Überwachung der Kommunikation mit angeschlossenen efa-PCs und
-					mit efaWeb</li>
-			</ul>
-		
-		<li>efaWeb
-
-			<ul>
-				<li>web-basiertes Fahrtenbuchprogramm, funktional ähnlich wie efa im
-					Bootshaus</li>
-				<li>nur verwendbar für von efaCloud autorisierte Nutzer</li>
-			</ul>
-		</li>
-	</ul>
-	<p>Über Feedback an support(at)efacloud.org freue ich mich immer!</p>
-</div>
-
+<?= i("U1NXw3| ** efaCloud - efa in th..."); ?>
 <?php
 end_script();

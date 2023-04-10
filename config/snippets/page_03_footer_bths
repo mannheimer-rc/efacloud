@@ -3,51 +3,39 @@
 </div>
 
     <!-- jQuery framework, smaller version for speed reasons -->
-    <script src="../js/jQuery_3.3.1.js"></script>
+    <script src="../js_13/jQuery_3.3.1.js"></script>
 
-    <!-- Common Scripts -->
-    <!-- ============== -->
+    <!-- application script code, efa spcific parts -->
+    <script src="../js_13/efaConfig.js"></script>
+    <script src="../js_13/efaListDefs.js"></script>
+    <script src="../js_13/efaInputValidator.js"></script>
 
-    <script src="../js/cGlobals.js"></script>
-    <script src="../js/cToolbox.js"></script>
-    <script src="../js/cModal.js"></script>
-    <script src="../js/cHelp.js"></script>
+    <!-- application script code, efa/dilo common -->
+    <script src="../js_13/cGlobals.js"></script>
+    <script src="../js_13/cToolbox.js"></script>
+    <script src="../js_13/cModal.js"></script>
+    <script src="../js_13/cLists.js"></script>
+    <script src="../js_13/cAutocomplete.js"></script>
+    <script src="../js_13/cMenu.js"></script>
+    <script src="../js_13/cForm.js"></script>
+    <script src="../js_13/cTxQueue.js"></script>
+    <script src="../js_13/cTxHandler.js"></script>
+    <!-- application script code, efa/dilo common UNUSED -->
 
-    <!-- efaCloud Scripts -->
-    <!-- ================ -->
+    <!-- application script code, efa object handling -->
+    <script src="../js_13/oSession.js"></script>
+    <script src="../js_13/oBoat.js"></script>
+    <script src="../js_13/oBoatstatus.js"></script>
+    <script src="../js_13/oReservation.js"></script>
+    <script src="../js_13/oDamage.js"></script>
+    <script src="../js_13/oPerson.js"></script>
 
-    <script src="../js/sMenu.js"></script>
-    <script src="../js/sEvents.js"></script>
-
-    <!-- efaWeb Scripts -->
-    <!-- ============== -->
-
-    <!-- generic parts -->
-    <script src="../js/bConfig.js"></script>
-    <script src="../js/bLog.js"></script>
-
-    <!-- UI parts -->
-    <script src="../js/bForm.js"></script>
-    <script src="../js/bFormHandler.js"></script>
-    <script src="../js/bPanel.js"></script>
-
-    <!-- data handling -->
-    <script src="../js/bLists.js"></script>
-    <script src="../js/bTrip.js"></script>
-    <script src="../js/bBoat.js"></script>
-    <script src="../js/bBoatstatus.js"></script>
-    <script src="../js/bReservation.js"></script>
-    <script src="../js/bDamage.js"></script>
-    <script src="../js/bPerson.js"></script>
-    <script src="../js/bStatistics.js"></script>
-
-    <!-- server interface -->
-    <script src="../js/bTxQueue.js"></script>
-    <script src="../js/bTxHandler.js"></script>
-
-    <!-- event binding -->
-    <script src="../js/bAutocomplete.js"></script>
-    <script src="../js/bEvents.js"></script>
+    <!-- application script code, efaWeb scripts -->
+    <script src="../js_13/bConfig.js"></script>
+    <script src="../js_13/bFormHandler.js"></script>
+    <script src="../js_13/bPanel.js"></script>
+    <script src="../js_13/bStatistics.js"></script>
+    <script src="../js_13/bEvents.js"></script>
 
 </body>
 </html>

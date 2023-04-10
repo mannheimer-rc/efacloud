@@ -14,6 +14,7 @@ include_once '../classes/tfyh_form.php';
 // if validation fails, the same form will be displayed anew with error messgaes
 $todo = ($done == 0) ? 1 : $done;
 $form_errors = "";
+$info = "";
 $form_layout = "../config/layouts/configparameter_aendern";
 
 // ======== Start with form filled in last step: check of the entered values.
@@ -53,27 +54,16 @@ echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
 
 // page heading, identical for all workflow steps
-?>
-<!-- START OF content -->
-<div class="w3-container">
-	<h3>Konfigurationsparameter ändern</h3>
-	<p>
-		Hier kann die Konfiguration angepasst werden. Die Anpassung von Farben
-		und Schrifttyp ist <b><i><a href='../forms/farben_aendern.php'>hier</a></i></b>
-		möglich. Die Datenbankzugangsdaten können nur bei der Installation
-		geüändert werden.
-	</p>
-<?php
-
+echo i("E4weTW| ** Change configuration...");
 echo $toolbox->form_errors_to_html($form_errors);
 if ($todo == 1) {
-    echo $form_to_fill->get_html($fs_id);
-    echo '<h5><br />Ausfüllhilfen</h5><ul>';
+    echo $form_to_fill->get_html();
     echo $form_to_fill->get_help_html();
-    echo "</ul>";
 }
 if ($todo == 2) {
     echo $info;
+    echo "<p>" . i("AGFCdm|Note: language settings ...") . "</p>";
+    echo "<p><a href='../pages/home.php' class='formbutton'>" . i("3oww70|continue") . "</a></p>";
 }
-?></div><?php
+echo i("LSoAtS|</div>");
 end_script();

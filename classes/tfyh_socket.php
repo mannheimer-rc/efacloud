@@ -80,7 +80,7 @@ class Tfyh_socket
     }
 
     /**
-     * A wrapper to manage exceptions
+     * A wrapper to manage exceptions. No i18n for texts, this is low level code, English only.
      * 
      * @param String $sql_cmd            
      */
@@ -93,6 +93,7 @@ class Tfyh_socket
                 file_put_contents($this->sql_debug_file, $log_opener, FILE_APPEND);
             $result = $this->mysqli->query($sql_cmd);
             if ($result === false) {
+                // nio i18n, because the error description will anyway be English
                 $log_error = "[FAILED] " . $this->mysqli->error . json_encode($result) . "\n";
                 file_put_contents($this->sql_error_file, $log_opener . $log_error, FILE_APPEND);
                 if ($this->debug_on)
@@ -131,15 +132,15 @@ class Tfyh_socket
             $this->mysqli = new mysqli($cfg_db["db_host"], $cfg_db["db_user"], $cfg_db["db_up"], 
                     $this->db_name);
         } catch (exception $e) {
-            return "Data base connection failed: " . $e->getMessage();
+            return i("R51PFL|Data base connection fai...") . " " . $e->getMessage();
         }
         if ($this->mysqli->connect_error)
-            return "Data base connection error: " . $this->mysqli->connect_error . ".";
+            return i("vCGSbJ|Data base connection err...") . " " . $this->mysqli->connect_error . ".";
         $this->mysqli_query("SET NAMES 'UTF8'", "open_socket");
         $ret = $this->mysqli_query("SELECT 1", "open_socket");
         // cf. https://stackoverflow.com/questions/3668506/efficient-sql-test-query-or-
         // validation-query-that-will-work-across-all-or-most
-        return ($ret !== false) ? true : "Data base connection successful, but test statement 'SELECT 1' failed.";
+        return ($ret !== false) ? true : i("s2Mkwj|Data base connection suc...");
     }
 
     /**
@@ -163,8 +164,8 @@ class Tfyh_socket
     }
 
     /**
-     * Get the numer of affected rows for the last sql command executed. See mysqli::$affected_rows for return
-     * value meaning.
+     * Get the number of affected rows for the last sql command executed. See mysqli::$affected_rows for
+     * return value meaning.
      * 
      * @return int|mixed mysqli->affected_rows
      */
@@ -194,7 +195,7 @@ class Tfyh_socket
         if (! is_null($this->mysqli->error) && (strlen($this->mysqli->error) > 0))
             return $this->mysqli->error;
         else
-            return "no last mysqli error available.";
+            return i("9Qyhtr|no last mysqli error ava...");
     }
 
     /**
@@ -202,7 +203,7 @@ class Tfyh_socket
      */
     
     /**
-     * Delete all entries from chage log which are older than $days_to_keep * 24*3600 seconds. And limits the
+     * Delete all entries from chage log which are older than $days_to_keep * 24*3600 seconds. Tod limits the
      * log also to $records_to_keep records. Issues no warnings and no errors.
      * 
      * @param int $days_to_keep
@@ -248,19 +249,20 @@ class Tfyh_socket
                  $this->toolbox->config->changelog_name . "` WHERE 1 ORDER BY `ID` DESC LIMIT 200";
         $res = $this->mysqli_query($sql_cmd, "get_change_log");
         if ($res === false)
-            return "<h3>Changes</h3><br>Error executing database SELECT statement.";
+            return "<h3>" . i("84qqTb|Changes") . "</h3><br>" . i("edML3Q|Error executing database...");
         elseif (intval($res->num_rows) > 0)
             $row = $res->fetch_row();
         else
-            return "No changes logged.";
+            return i("SMOZBB|No changes logged.");
         $ret = "";
         while ($row) {
-            $ret .= "<p><b>Author:</b> " . $row[0] . "<br><b>Time:</b> " . $row[1] . "<br><b>Table:</b> " .
-                     $row[2] . "<br><b>changed ID:</b> " . $row[3] . "<br><b>Description:</b> " . $row[4] .
-                     "<br></p>\n";
+            $ret .= "<p><b>" . i("WP2gSG|Author:") . "</b> " . $row[0] . "<br><b>" . i("R9sv8M|Time:") .
+                     "</b> " . $row[1] . "<br><b>" . i("k55LAo|Table:") . "</b> " . $row[2] . "<br><b>" .
+                     i("gjYPBf|Changed ID:") . "</b> " . $row[3] . "<br><b>" . i("B9EOmx|Description:") .
+                     "</b> " . $row[4] . "<br></p>\n";
             $row = $res->fetch_row();
         }
-        return "<h3>Changes</h3><br>\n" . $ret;
+        return "<h3>" . i("E6z7DI|Changes") . "</h3><br>\n" . $ret;
     }
 
     /**
@@ -296,17 +298,18 @@ class Tfyh_socket
                     FILE_APPEND);
         }
         // execute sql command. Connection must have been opened before.
+        // no i18n here, error messages are anyway in English
         $ret = "";
         $res = $this->mysqli_query($sql_cmd, $caller_text);
         if ($res === false) {
             if ($this->debug_on)
                 file_put_contents($this->sql_debug_file, "failed: " . $this->mysqli->error . "\n", 
                         FILE_APPEND);
-            $ret .= "Database statement '" . htmlspecialchars(substr($sql_cmd, 0, 5000)) .
-                     " ... failed. Error: '" . $this->mysqli->error . "'.";
+            $ret .= i("4YsmYP|Data base statement °%1 ...", 
+                    htmlspecialchars(substr($sql_cmd, 0, 5000), $this->mysqli->error));
         } else {
             if ($this->debug_on)
-                file_put_contents($this->sql_debug_file, "successful.\n", FILE_APPEND);
+                file_put_contents($this->sql_debug_file, i("vsbqU2|successful.") . "\n", FILE_APPEND);
             if ($return_insert_id == true)
                 $ret = $this->mysqli->insert_id;
             else
@@ -348,7 +351,8 @@ class Tfyh_socket
             return $record;
         $users_cnt = $this->count_records($this->toolbox->users->user_table_name);
         if ($users_cnt == 0)
-            // the very first user must get the priviledge to be inserted anyway, with user admin rights.
+            // the very first user must get the priviledge to be inserted anyway, with user admin
+            // rights.
             return $record;
         
         $user = $this->find_record($table_name, $this->toolbox->users->user_id_field_name, $appUserID);
@@ -359,33 +363,48 @@ class Tfyh_socket
         
         if (($user === false) && ! isset($record["ID"]) && (! isset($record["Rolle"]) ||
                  (strcasecmp($record["Rolle"], $this->toolbox->users->anonymous_role) == 0)) &&
-                 (intval($record["Workflows"]) == 0) && (intval($record["Concessions"]) == 0))
+                 (intval($record["Workflows"]) == 0) && (intval($record["Concessions"]) == 0)) {
             // if the $record["ID"] is not set, this is a registration. Allow it for no user rights.
+            $record["Rolle"] = $this->toolbox->users->anonymous_role;
             return $record;
+        }
         
-        if (isset($record["ID"]) && intval($record["ID"]) != intval($user["ID"]))
-            // this is a different users data and the user is no useradmin: forbidden
-            return "User tried to modify other users data without useradmin role";
+        if (isset($record["ID"]) && intval($record["ID"]) != intval($user["ID"])) {
+            // role is no user admin, but workflows may allow to change other users data fields
+            $is_allowed_workflow = false;
+            foreach ($this->toolbox->users->useradmin_workflows as $allowed_workflow => $allowed_fields) {
+                if (! $is_allowed_workflow && ((intval($user["Workflows"]) & intval($allowed_workflow)) > 0)) {
+                    $is_allowed_workflow = true;
+                    foreach ($record as $key => $value) {
+                        if ((strcmp($key, "ID") != 0) && ! in_array($key, $allowed_fields))
+                            $is_allowed_workflow = false;
+                    }
+                }
+            }
+            if (! $is_allowed_workflow)
+                // this is a different users data and the user is no useradmin: forbidden
+                return i("psSYI1|User tried to modify oth...");
+        }
         
         // check change of role, workflows, concessions, userID or account name
         if (isset($record["Rolle"]) && (strcasecmp($record["Rolle"], $user["Rolle"]) != 0) &&
                  (strcasecmp($record["Rolle"], $this->toolbox->users->self_registered_role) != 0))
-            return "User tried to modify own access role without useradmin role";
+            return i("gI7hvr|User tried to modify own...");
         if (isset($record["Workflows"]) && (intval($record["Workflows"]) != intval($user["Workflows"])))
-            return "User tried to modify own Workflows role without useradmin role";
+            return i("4RIp1F|User tried to modify own...");
         if (isset($record["Concessions"]) && (intval($record["Concessions"]) != intval($user["Concessions"])))
-            return "User tried to modify own Concessions role without useradmin role";
+            return i("T5N6rh|User tried to modify own...");
         if (isset($record[$this->toolbox->users->user_id_field_name]) && (intval(
                 $record[$this->toolbox->users->user_id_field_name]) != intval(
                 $user[$this->toolbox->users->user_id_field_name])))
-            return "User tried to modify own user ID " . $user[$this->toolbox->users->user_id_field_name] .
-                     " to " . $record[$this->toolbox->users->user_id_field_name] . " without useradmin role";
+            return i("A2Zw3z|User tried to modify own...", $user[$this->toolbox->users->user_id_field_name], 
+                    $record[$this->toolbox->users->user_id_field_name]);
         if (isset($record[$this->toolbox->users->user_account_field_name]) && (strcasecmp(
                 $record[$this->toolbox->users->user_account_field_name], 
                 $user[$this->toolbox->users->user_account_field_name]) != 0))
-            return "User tried to modify own account name " .
-                     $user[$this->toolbox->users->user_account_field_name] . " to " .
-                     $record[$this->toolbox->users->user_account_field_name] . " without useradmin role";
+            return i("m6BPH3|User tried to modify own...", 
+                    $user[$this->toolbox->users->user_account_field_name], 
+                    $record[$this->toolbox->users->user_account_field_name]);
         
         // All checks passed: ok.
         return $record;
@@ -429,20 +448,24 @@ class Tfyh_socket
             // information
             if (! isset($this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp($key, 
                     $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0))
-                // No quote escaping in the change log entry. This will be handled in execute_and_log().
+                // No quote escaping in the change log entry. This will be handled in
+                // execute_and_log().
                 $change_entry .= $key . '="' . $value . '", ';
         }
         // cut off last ", `";
-        $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 3);
+        $sql_cmd = mb_substr($sql_cmd, 0, mb_strlen($sql_cmd) - 3);
         
-        $change_entry = substr($change_entry, 0, strlen($change_entry) - 2);
+        $change_entry = mb_substr($change_entry, 0, mb_strlen($change_entry) - 2);
         $sql_cmd .= ") VALUES ('";
-        foreach ($record as $key => $value)
-            $sql_cmd .= str_replace("'", "\'", $value) . "', '";
+        foreach ($record as $key => $value) {
+            if (is_null($value))
+                $sql_cmd = mb_substr($sql_cmd, 0, mb_strlen($sql_cmd) - 1) . "NULL, '";
+            else
+                $sql_cmd .= str_replace("'", "\'", str_replace("\\", "\\\\", $value)) . "', '";
+        }
         // cut off last ", '";
-        $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 3);
+        $sql_cmd = mb_substr($sql_cmd, 0, mb_strlen($sql_cmd) - 3);
         $sql_cmd .= ")";
-        
         // set last write access timestamp, if used.
         if (file_exists("../log/lwa"))
             file_put_contents("../log/lwa/" . $appUserID, strval(time()));
@@ -561,7 +584,7 @@ class Tfyh_socket
                 }
             }
         }
-        $new_version = substr($new_version, 0, strlen($new_version) - 1);
+        $new_version = mb_substr($new_version, 0, mb_strlen($new_version) - 1);
         // add the new version, if there were changes, to the history array and return it.
         if ($any_changes)
             $record_versions[] = $new_version;
@@ -612,7 +635,7 @@ class Tfyh_socket
         }
         if (strlen($wherekeyis) == strlen("WHERE "))
             return "WHERE 1";
-        $wherekeyis = substr($wherekeyis, 0, strlen($wherekeyis) - 5);
+        $wherekeyis = mb_substr($wherekeyis, 0, mb_strlen($wherekeyis) - 5);
         return $wherekeyis;
     }
 
@@ -634,9 +657,9 @@ class Tfyh_socket
                 $matched_record .= $key . "=\'" . strval($value) . "\', ";
         }
         if (strlen($matched_record) == 0)
-            return "[undefined]";
+            return i("VpjI4B|[not defined]");
         if (strrpos($matched_record, ", ") !== false)
-            $matched_record = substr($matched_record, 0, strlen($matched_record) - 2);
+            $matched_record = mb_substr($matched_record, 0, mb_strlen($matched_record) - 2);
         return $matched_record;
     }
 
@@ -679,8 +702,7 @@ class Tfyh_socket
         // update history data field
         $prev_rec = $this->find_record_matched($table_name, $matching_keys);
         if ($prev_rec === false)
-            return "Error updating record in $table_name. Could not find record with key: " .
-                     json_encode($matching_keys);
+            return i("EvZXbc|Error updating record in...", $table_name) . " " . json_encode($matching_keys);
         $historyField = (isset($this->toolbox->config->settings_tfyh["history"][$table_name])) ? $this->toolbox->config->settings_tfyh["history"][$table_name] : false;
         if ($historyField) {
             $excludeFields = (isset($this->toolbox->config->settings_tfyh["historyExclude"][$table_name])) ? $this->toolbox->config->settings_tfyh["historyExclude"][$table_name] : "";
@@ -688,7 +710,7 @@ class Tfyh_socket
                     $excludeFields, $appUserID, 
                     $this->toolbox->config->settings_tfyh["maxversions"][$table_name]);
         }
-        $change_entry = "updated: ";
+        $change_entry = i("tzrcLT|update:") . " ";
         
         // create SQL command and change log entry.
         $sql_cmd = "UPDATE `" . $table_name . "` SET ";
@@ -701,24 +723,32 @@ class Tfyh_socket
             // skip matching keys, they are anyway equal
             foreach ($matching_keys as $matching_key)
                 $skip_update = $skip_update || (strcasecmp($key, $matching_key) == 0);
-            // check empty values. 2. If previous was not empty, and the record was numeric or a
-            // date, try NULL as value
-            if (! $skip_update && (! $value && (strlen($value) == 0)) && (is_numeric($prev_rec[$key]) ||
-                     is_numeric(strtotime($prev_rec[$key]))))
-                $sql_cmd .= "`" . $key . "` = NULL,";
-            else 
-                if (! $skip_update)
-                    $sql_cmd .= "`" . $key . "` = '" . str_replace("'", "\'", $value) . "',";
+            if (! $skip_update) {
+                if ((is_null($value) || (strlen($value) == 0)) && (is_numeric($prev_rec[$key]) ||
+                         is_numeric(strtotime($prev_rec[$key])))) {
+                    // replace empty numeric values. 2. If previous was not empty, and the record
+                    // was numeric
+                    // or a date, this will create a number format error, instead use NULL as value
+                    $sql_cmd .= "`" . $key . "` = NULL,";
+                } else {
+                    if (is_null($value))
+                        $sql_cmd .= "`" . $key . "` = NULL,";
+                    else
+                        $sql_cmd .= "`" . $key . "` = '" . str_replace("'", "\'", $value) . "',";
+                }
+            }
             // the change entry shall neither contain the keys, nor the record history to
             // prevent from too much redundant information
             if (! $skip_update && (strcmp($value, $prev_rec[$key]) !== 0) && (! isset(
                     $this->toolbox->config->settings_tfyh["history"][$table_name]) || (strcasecmp($key, 
                     $this->toolbox->config->settings_tfyh["history"][$table_name]) != 0)))
-                // No quote escaping in the change log entry. This will be handled in execute_and_log().
+                // No quote escaping in the change log entry. This will be handled in
+                // execute_and_log().
                 $change_entry .= $key . ': "' . $prev_rec[$key] . '"=>"' . $value . '", ';
         }
-        $sql_cmd = substr($sql_cmd, 0, strlen($sql_cmd) - 1);
-        $change_entry = substr($change_entry, 0, strlen($change_entry) - 2);
+        
+        $sql_cmd = mb_substr($sql_cmd, 0, mb_strlen($sql_cmd) - 1);
+        $change_entry = mb_substr($change_entry, 0, mb_strlen($change_entry) - 2);
         $sql_cmd .= " " . $this->clause_for_wherekeyis($table_name, $matching_keys, "=");
         
         // set last write access timestamp, if used.
@@ -738,6 +768,8 @@ class Tfyh_socket
 
     /**
      * Convenience shortcut for delete_record_matched with a primary key of name ID
+     * 
+     * @return String an error statement in case of failure, else "".
      */
     public function delete_record (String $appUserID, String $table_name, String $id)
     {
@@ -764,17 +796,18 @@ class Tfyh_socket
         // get previous recors to log change
         $prev_rec = $this->find_record_matched($table_name, $matching);
         if ($prev_rec === false)
-            return "Record to delete was not found.";
-        $change_entry = "deleted: ";
-        
+            return i("S9MHHT|Record to delete was not...");
+        $change_entry = "deleted: "; // technical term, no i18n
+                                     
         // create SQL command and change log entry.
-        // No quote escaping in the change log entry. This will be handled in execute_and_log().
+                                     // No quote escaping in the change log entry. This will be handled in
+                                     // execute_and_log().
         foreach ($prev_rec as $key => $value) {
             $change_entry .= $key . "='" . $prev_rec[$key] . "', ";
         }
         // deletions will not change the last modified time stamp, because they
         // delete the data anyway.
-        $change_entry = substr($change_entry, 0, strlen($change_entry) - 2);
+        $change_entry = mb_substr($change_entry, 0, mb_strlen($change_entry) - 2);
         // ID used is **ID**
         $sql_cmd .= "DELETE FROM `" . $table_name . "` " .
                  $this->clause_for_wherekeyis($table_name, $matching, "=");
@@ -922,7 +955,7 @@ class Tfyh_socket
         if (strlen($col_indicators) == 0)
             $col_indicators = "*";
         else
-            $col_indicators = substr($col_indicators, 0, strlen($col_indicators) - 2);
+            $col_indicators = mb_substr($col_indicators, 0, mb_strlen($col_indicators) - 2);
         // compile command parts: rows to choose
         $where_string = (strlen($condition) == 0) ? 'WHERE 1 ' : $this->clause_for_wherekeyis($table_name, 
                 $matching, $condition);
@@ -939,7 +972,7 @@ class Tfyh_socket
                 else
                     $sort_str .= "`" . $table_name . "`.`" . $sort_col . "` " . $sort_way . ", ";
             }
-            $sort_str = substr($sort_str, 0, strlen($sort_str) - 2);
+            $sort_str = mb_substr($sort_str, 0, mb_strlen($sort_str) - 2);
         }
         // compile command parts: limit or chunk of returned rows
         $limit_string = " LIMIT " . $start_row . "," . $max_rows;
@@ -1045,12 +1078,12 @@ class Tfyh_socket
     {
         $cols = $this->get_column_names($table_name);
         if (($cols === false) || (count($cols) == 0))
-            return "no_columns_found_in_" . $table_name;
+            return "no_columns_found_in_" . $table_name; // no i18n
         
         $csv = "";
         foreach ($cols as $col)
             $csv .= $col . ";";
-        $csv = substr($csv, 0, strlen($csv) - 1) . "\n";
+        $csv = mb_substr($csv, 0, mb_strlen($csv) - 1) . "\n";
         
         $col_indicators = "";
         foreach ($cols as $col_name)
@@ -1071,7 +1104,7 @@ class Tfyh_socket
                     $entries ++;
                 }
                 if ($entries > 0)
-                    $csv = substr($csv, 0, strlen($csv) - 1);
+                    $csv = mb_substr($csv, 0, mb_strlen($csv) - 1);
                 $csv .= "\n";
                 $row = $res->fetch_row();
             }
@@ -1087,7 +1120,7 @@ class Tfyh_socket
      *            the name of the table to be used.
      * @param String $filter_and_order
      *            a String which will be added to the SQL statement containing the WHERE and ORDER BY clauses,
-     *            e.g. "WHERE 1 ORDER BY `Funktionen`.`efaCloudUserID` DESC".
+     *            e.g. "WHERE 1 ORDER BY `Functionen`.`efaCloudUserID` DESC".
      * @return the full table as array of rows, each row being an array of $entries as $key => $value with
      *         $key being the respective column name.
      */
@@ -1104,7 +1137,7 @@ class Tfyh_socket
         $col_indicators = "";
         foreach ($cols as $col_name)
             $col_indicators .= "`" . $col_name . "`, ";
-        $col_indicators = substr($col_indicators, 0, strlen($col_indicators) - 2);
+        $col_indicators = mb_substr($col_indicators, 0, mb_strlen($col_indicators) - 2);
         $sql_cmd = "SELECT " . $col_indicators . " FROM " . $table_name . " " . $filter_and_order;
         $res = $this->mysqli_query($sql_cmd, "get_table_as_array");
         $rows = [];
@@ -1157,27 +1190,20 @@ class Tfyh_socket
         // read table
         $table_read = $this->toolbox->read_csv_array($csv_file_path);
         if ($table_read === [])
-            return "#Error: Import aborted because of a syntax error in the import file.";
+            return i("g1Qw1Z|#Error: Import aborted b...");
         
         // check, if all column names exist and if column name "ID" exists
         $column_names = $this->get_column_names($table_name);
         $columns_not_matched = "";
-        $column_ID_exists = false;
-        foreach ($table_read[0] as $column => $entry) {
-            if (strcmp($column, $idname) == 0)
-                $column_ID_exists = true;
-            $this_column_exists = false;
-            foreach ($column_names as $column_name)
-                if (strcmp($column, $column_name) == 0)
-                    $this_column_exists = true;
-            if (! $this_column_exists)
+        $column_ID_exists = in_array($idname, $column_names);
+        $column_LastModified_exists = in_array("LastModified", $column_names);
+        foreach ($table_read[0] as $column => $entry)
+            if (! in_array($column, $column_names))
                 $columns_not_matched .= $column . ", ";
-        }
         if (! $column_ID_exists)
-            return "#Error: Import aborted. Import file must have a column " . $idname . ".";
+            return i("UB62oq|#Error: Import aborted. ...", $idname);
         if (strlen($columns_not_matched) > 0)
-            return " // Error: Import aborted because the following columns of the import file are missing in
-                     // the target table: " . $columns_not_matched;
+            return i("tAzk9C|#Error: Import aborted b...") . " " . $columns_not_matched;
         
         // special case: if the able contains but the ID, then the records for
         // the given IDs shall be deleted
@@ -1196,24 +1222,27 @@ class Tfyh_socket
                 $update_record = ($res !== false) && (intval($res->num_rows) > 0);
                 if ($update_record) {
                     // update record now
-                    $result .= "Update " . $idname . " " . $id . " mit: ";
+                    $result .= i("UU1TV0|Update %1 with: %2", $idname, $id) . "<br>";
                     foreach ($record as $key => $entry) {
                         $result .= htmlspecialchars($entry) . ";";
                         // $this->update_record expects utf-8 encoded Strings
                         $record[$key] = $entry;
                     }
+                    // Add timestamp for Last modification (efacloud)
+                    if ($column_LastModified_exists)
+                        $record["LastModified"] = time() . "000";
                     $result .= "<br />";
                     if (! $verify_only)
                         $result .= $this->update_record_matched($appUserID, $table_name, 
                                 [$idname => $id
                                 ], $record) . "<br />";
                 } else {
-                    $result .= "Skip missing " . $idname . " " . $id . "<br />";
+                    $result .= i("bciyl7|Skip missing %1 %2", $idname, $id) . "<br />";
                 }
             } else {
                 if ($delete_entries) {
                     // delete record now
-                    $result .= "Deleting " . $idname . " " . $id . ". Record with current values: ";
+                    $result .= i("IH9RiO|Deleting %1 %2 Record wi...", $idname, $id) . " ";
                     $current_record = $this->find_record_matched($table_name, 
                             [$idname => $id
                             ]);
@@ -1226,7 +1255,7 @@ class Tfyh_socket
                                 ]);
                 } else {
                     // insert record now
-                    $result .= "Inserting: ";
+                    $result .= i("CWEDJn|Inserting:") . " ";
                     foreach ($record as $key => $entry) {
                         $result .= htmlspecialchars($entry) . ";";
                         // $this->insert_into expects utf-8 encoded Strings
@@ -1237,21 +1266,21 @@ class Tfyh_socket
                         // remove the empty "ID" String to ensure it is
                         // autoincremented
                         unset($record[$idname]);
+                        // Add timestamp for Last modification (efacloud)
+                        if ($column_LastModified_exists)
+                            $record["LastModified"] = time() . "000";
                         $insert_into_res = $this->insert_into($appUserID, $table_name, $record);
-                        // in case of success $insert_into_res will be the id of
-                        // the inserted
-                        // record.
+                        // in case of success $insert_into_res will be the id of the inserted record.
                         if (! is_numeric($insert_into_res))
-                            $result .= $this->insert_into($appUserID, $table_name, $record);
+                            $result .= $insert_into_res;
                     }
                 }
             }
         }
         
         // return result.
-        $result = ($verify_only) ? "<b>The following changes are to be carried out with the import:</b><br />" .
-                 $result : "<b>The following changes have been carried out with the import:</b><br />" .
-                 $result;
+        $result = ($verify_only) ? "<b>" . i("8h4mmf|The following changes ar...") . "</b><br />" . $result : "<b>" .
+                 i("8gVWmU|The following changes ha...") . "</b><br />" . $result;
         return $result;
     }
 
@@ -1272,7 +1301,7 @@ class Tfyh_socket
     /**
      * Simple getter
      * 
-     * @return data base server version
+     * @return data base server version, no i18n
      */
     public function get_server_info ()
     {
@@ -1431,6 +1460,46 @@ class Tfyh_socket
     }
 
     /**
+     * Get the size in kB of all tables of the data base.
+     * 
+     * @return array the tables sizes as associative array, sorted by largest first.
+     */
+    public function get_table_sizes_kB ()
+    {
+        $sql_cmd = "SELECT TABLE_NAME AS `Table`, ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024) AS `Size (kB)` " .
+                 "FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . $this->db_name .
+                 "' ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC;";
+        $res = $this->mysqli_query($sql_cmd, "get_table_sizes");
+        // put all values to the array, the column name being the key.
+        $ret = [];
+        $row = $res->fetch_row();
+        while ($row) {
+            // the fetch_row function is an iterator, returning an array with
+            // the table name always being at pos 0
+            $ret[$row[0]] = $row[1];
+            $row = $res->fetch_row();
+        }
+        $res->free();
+        foreach ($ret as $tablename => $tablesize) {
+            $column_names = $this->get_column_names($tablename);
+            $column_types = $this->get_column_types($tablename);
+            $total_blob_size_kB = 0;
+            for ($c = 0; $c < count($column_names); $c ++) {
+                if (strpos(strtolower($column_types[$c]), "text") !== false) {
+                    $sql_cmd = "SELECT SUM(OCTET_LENGTH(`" . $column_names[$c] .
+                             "`)) AS TOTAL_SIZE FROM `$tablename`";
+                    $res = $this->mysqli_query($sql_cmd, "get_blob_colum_size");
+                    $row = $res->fetch_row();
+                    $column_size = intval($row[0] / 1024);
+                    $total_blob_size_kB += $column_size;
+                }
+            }
+            $ret[$tablename] += $total_blob_size_kB;
+        }
+        return $ret;
+    }
+
+    /**
      * Get all versions of a history entry by splitting it into lines and combining those lines, which end
      * within a quoted entry.
      * 
@@ -1463,12 +1532,17 @@ class Tfyh_socket
      * 
      * @param String $record_history
      *            The record history String.
+     * @param String $restore_link
+     *            A link to be included as a restore button per version. Omit or Set to "" if not used.
+     *            Example "../pages/show_history.php?table=users&id=123". The respective version will be added
+     *            as "&restore_version=[number]".
      */
-    public function get_history_html (String $record_history)
+    public function get_history_html (String $record_history, String $restore_link = "")
     {
+        global $dfmt_d, $dfmt_dt;
         // read the current history. Keep the version index. Create an empty array for insert
         if (is_null($record_history) || (strlen($record_history) == 0))
-            return "No version history available.";
+            return i("Xn806o|No version history avail...");
         
         $record_versions = $this->get_versions($record_history);
         $html = "";
@@ -1480,13 +1554,20 @@ class Tfyh_socket
                 $author_record = $this->find_record_matched($this->toolbox->users->user_table_name, 
                         [$this->toolbox->users->user_id_field_name => $parts[1]
                         ]);
+                $version_int = intval($parts[0]);
                 $author_name = ($author_record !== false) ? $parts[1] . " (" .
                          $author_record[$this->toolbox->users->user_firstname_field_name] . " " .
                          $author_record[$this->toolbox->users->user_lastname_field_name] . ")" : (($parts[1] ==
-                         "0") ? "efaCloud Server" : "unbekannt");
-                $version_html = "<p>" . date("d.m.Y H:i:s", $parts[2]) . " - <b>V" . $parts[0] .
-                         "</b> - Autor " . $author_name . "</p>";
-                $version_html .= "<table><tr><th>Feld</th><th>Wert</th></tr>\n";
+                         "0") ? i("KWQvhQ|Application") : i("VCdF1p|unknown"));
+                $version_html = "<p>" . date($dfmt_dt, $parts[2]) . " - <b>V" . $version_int . "</b> - " .
+                         i("nOchmJ|Author") . " " . $author_name;
+                if ((strlen($restore_link) > 0) && ($version_int != count($record_versions)))
+                    $version_html .= " - <a href='" . $restore_link . "&restore_version=" . $version_int . "'>" .
+                             i("wiLfGW|Restore version V%1.", $parts[0]) . "</a>";
+                $last_version = false;
+                $version_html .= "</p>";
+                $version_html .= "<table><tr><th>" . i("avyj0D|Field") . "</th><th>" . i("W1p3g6|Value") .
+                         "</th></tr>\n";
                 $fields = $this->toolbox->read_csv_line($parts[3])["row"];
                 $record_version = [];
                 foreach ($fields as $field) {
@@ -1496,7 +1577,7 @@ class Tfyh_socket
                     if (strlen($key_n_value[1]) > 0) {
                         if (($last_value == false) || (strcmp($key_n_value[1], $last_value) != 0)) {
                             $lmod_string = (strcasecmp("LastModified", $key_n_value[0]) == 0) ? " [" .
-                                     date("d.m.Y H:i:s", intval(substr($key_n_value[1], 0, 10))) . "]" : "";
+                                     date($dfmt_dt, intval(substr($key_n_value[1], 0, 10))) . "]" : "";
                             $version_html .= "<tr><td>" . $key_n_value[0] . "</td><td>" .
                                      str_replace("\n", "<br>", $key_n_value[1]) . $lmod_string . "</td></tr>\n";
                         }
@@ -1508,6 +1589,41 @@ class Tfyh_socket
             }
         }
         return $html;
+    }
+
+    /**
+     * Parse a history String and return the record history as array with per version an associative array
+     * "author", "Version", "time", "record_version".
+     * 
+     * @param String $record_history
+     *            The record history String.
+     * @return array the array of all record versions
+     */
+    public function get_history_array (String $record_history)
+    {
+        // read the current history. Keep the version index. Create an empty array for insert
+        if (is_null($record_history) || (strlen($record_history) == 0))
+            return i("JTclLO|No version history avail...");
+        
+        $record_versions = $this->get_versions($record_history);
+        $record_versions_array = [];
+        foreach ($record_versions as $record_version) {
+            // now interpret the version.
+            if (strlen($record_version) > 5) {
+                $parts = explode(";", $record_version, 4);
+                $fields = $this->toolbox->read_csv_line($parts[3])["row"];
+                $record_version = [];
+                foreach ($fields as $field) {
+                    $key_n_value = explode(":", $field, 2);
+                    $record_version[$key_n_value[0]] = $key_n_value[1];
+                }
+                $version_array = ["version" => intval($parts[0]),"author" => $parts[1],
+                        "time" => intval($parts[2]),"record_version" => $record_version
+                ];
+                $record_versions_array[] = $version_array;
+            }
+        }
+        return $record_versions_array;
     }
 
 /**

@@ -14,23 +14,15 @@ unlink("../log/cronjobs_last_day");
 $cronlog_before = file_get_contents("../log/sys_cronjobs.log");
 Cron_jobs::run_daily_jobs($toolbox, $socket, $_SESSION["User"][$toolbox->users->user_id_field_name], true);
 $cronlog_after = file_get_contents("../log/sys_cronjobs.log");
-$cronlog_this = substr($cronlog_after, strlen($cronlog_before));
+$cronlog_this = (mb_strlen($cronlog_after) > mb_strlen($cronlog_before)) ? mb_substr($cronlog_after, 
+        mb_strlen($cronlog_before)) : $cronlog_after;
 
 // ===== start page output
 echo file_get_contents('../config/snippets/page_01_start');
 echo $menu->get_menu();
 echo file_get_contents('../config/snippets/page_02_nav_to_body');
-?>
-
-<!-- START OF content -->
-<div class="w3-container">
-	<h3>Die täglichen Wartungroutinen<sup class='eventitem' id='showhelptext_Wartungsroutinen'>&#9432</sup> wurden durchgeführt.</h3>
-	<p>
-<?php
+echo i("qMjfvd| ** The daily maintenan...");
 echo str_replace("\n", "<br>", $cronlog_this);
 
-?>
-  </p>
-</div>
-<?php
+echo i("r3pK7A|  </p></div>");
 end_script();

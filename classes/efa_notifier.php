@@ -49,20 +49,24 @@ class Efa_notifier
                     if (isset($record["BoatId"]))
                         $boat = $this->socket->find_record("efa2boats", "Id", $record["BoatId"]);
                     else
-                        $boat = ["Name" => "kein Boot angegeben"
+                        $boat = ["Name" => i("ZH4LGD|No boat specified")
                         ];
-                    if (isset($record["ReportedByPersonId"]))
+                    $full_name = i("zErjpE|Person could not be foun...");
+                    if (isset($record["ReportedByPersonId"])) {
                         $person = $this->socket->find_record("efa2persons", "Id", 
                                 $record["ReportedByPersonId"]);
-                    else
-                        $person = ["LastName" => "Person konnte nicht gefunden werden"
-                        ];
+                        if ($person !== false) {
+                            include_once '../classes/efa_tables.php';
+                            $full_name = Efa_tables::virtual_full_name($person["FirstName"], 
+                                    $person["LastName"], $this->toolbox);
+                        }
+                    }
                     $mailto = $cfg["notify_damage_to"];
-                    $subject = "[efa] Neuer Bootsschaden für das Boot " . $boat["Name"];
-                    $message = "<p>Ein neuer Bootsschaden wurde in efa für das Boot " .
-                             htmlentities(utf8_decode($boat["Name"])) . " durch " .
-                             htmlentities(utf8_decode($person["FirstName"] . " " . $person["LastName"])) .
-                             " eingetragen.</p>";
+                    $subject = i("Q49rLD|[efa] New boat reservati...") . " " . $boat["Name"];
+                    $message = "<p>" . i(
+                            "NY2pjM|A new boat damage record...", 
+                            htmlentities(utf8_decode($boat["Name"])), htmlentities(utf8_decode($full_name))) .
+                             "</p>";
                 }
             } elseif (strcasecmp($tablename, "efa2messages") == 0) {
                 // prepare a notification message for a damage
@@ -70,11 +74,11 @@ class Efa_notifier
                          (strlen($cfg["notify_admin_message_to"]) > 4);
                 $is_to_admin = (strcasecmp($record["To"], "ADMIN") == 0);
                 if ($to_be_notified && $is_to_admin) {
-                    $mailto = $cfg["notify_damage_to"];
-                    $subject = "[efa] Neue Nachricht an ADMIN von " . $record["From"] . ", Betreff: " .
+                    $mailto = $cfg["notify_admin_message_to"];
+                    $subject = i("5KSMXt|[efa] New message to ADM...", $record["From"]) . " " .
                              $record["Subject"];
-                    $message = "<p>Eine neue Nachricht an den Admin liegt vor von " .
-                             htmlentities(utf8_decode($record["From"])) . ", Betreff: " .
+                    $message = "<p>" . i("0za9nH|A new message to the adm...", 
+                            htmlentities(utf8_decode($record["From"]))) .
                              htmlentities(utf8_decode($record["Subject"])) . ".</p>";
                 }
             } elseif (strcasecmp($tablename, "efa2boatreservations") == 0) {
@@ -88,20 +92,20 @@ class Efa_notifier
                         $boat = ["Name" => "kein Boot angegeben"
                         ];
                     $mailto = $cfg["notify_reservation_to"];
-                    $subject = "[efa] Neue Bootsreservierung für das Boot " . $boat["Name"] . ", " .
+                    $subject = i("ZjgTv2|[efa] New boat reservati...", $boat["Name"]) . ", " .
                              $record["VirtualReservationDate"];
-                    $message = "<p>Eine neue Bootsreservierung für das Boot " . $boat["Name"] .
-                             " liegt vor am " . $record["VirtualReservationDate"] . ".</p>";
+                    $message = "<p>" . i("ha2Cdj|A new boat reservation f...", 
+                            $boat["Name"], $record["VirtualReservationDate"]) . "</p>";
                 }
             }
             // if a notification message shall be sent, add the record and send it.
             if (strlen($mailto) > 4) {
                 include_once "../classes/tfyh_mail_handler.php";
                 $mail_handler = new Tfyh_mail_handler($cfg);
-                $message .= "<p>Die Details des Eintrags sind:<br>";
+                $message .= "<p>" . i("YdTDBW|The details of the entry...") . "<br>";
                 foreach ($record as $key => $value)
                     $message .= $key . ": " . htmlentities(utf8_decode($value)) . "<br>";
-                $message .= "</p><p>Dein Fahrtenbuch</p>" . $mail_handler->mail_footer;
+                $message .= "</p><p>" . i("wOmMPf|The logbook") . "</p>" . $mail_handler->mail_footer;
                 $mail_handler->send_mail($mail_handler->system_mail_sender, $mail_handler->system_mail_sender, 
                         $mailto, $mail_handler->mail_schriftwart, "", $subject, $message);
             }

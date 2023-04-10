@@ -18,8 +18,8 @@ class Tfyh_toolbox
     private $log_dir = "../log/";
 
     /**
-     * The set of characters to xor base64 strings = $base64chars plus the padding character '='.
-     * Used for "encryption". The padding character will not be xored.
+     * The set of characters to xor base64 strings = $base64chars plus the padding character '='. Used for
+     * "encryption". The padding character will not be xored.
      */
     private $base64charsPlus = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
@@ -29,8 +29,12 @@ class Tfyh_toolbox
     private $obfuscator = "jtzOjk6IjEyNy4wLjAuMSI7czoxMToiZGJfYWNjb3VudHMiO2E6MTp7czo0OiJyb290IjtzOjg6IlNmeDFubHAuIjt9czo3OiJkYl9uYW1lIjtzOjU6ImZ2c3NiIjtzO";
 
     /**
-     * Associative array providing the bit value associated to a base64 character. Used for
-     * "encryption".
+     * The list of valid characters for an internationalization token.
+     */
+    private $i18n_token_chars = "0123456789abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ0";
+
+    /**
+     * Associative array providing the bit value associated to a base64 character. Used for "encryption".
      */
     private $bitsForChar64 = [];
 
@@ -46,10 +50,10 @@ class Tfyh_toolbox
     ];
 
     /**
-     * headline of error indicating an overload. Will trigger specific actions. Must start with the
-     * no counting tag "!#".
+     * headline of error indicating an overload. Will trigger specific actions. Must start with the no
+     * counting tag "!#". Do not i18n here, but see usage in error.php
      */
-    public $too_many_sessions_error_headline = "Zu viele parallele Sitzungen";
+    public $too_many_sessions_error_headline = "!#too many sessions";
 
     /**
      * the app configuration
@@ -72,8 +76,8 @@ class Tfyh_toolbox
     public $app_sessions;
 
     /**
-     * Construct the Util class. This reads the configuration, initilizes the logger and the
-     * navigation menu, asf.
+     * Construct the Util class. This reads the configuration, initilizes the logger and the navigation menu,
+     * asf.
      */
     public function __construct ()
     {
@@ -82,6 +86,11 @@ class Tfyh_toolbox
         $this->config = new Tfyh_config($this);
         $init_settings = (isset($this->config->settings_tfyh["init"])) ? $this->config->settings_tfyh["init"] : array();
         
+        if (! file_exists("../classes/users.php")) {
+            echo "File '../classes/users.php' not found. The tfyh framework can not be used without providing this class file.";
+            // no i18n needed here.
+            exit();
+        }
         include_once '../classes/users.php';
         $this->users = new Users($this);
         include_once '../classes/tfyh_logger.php';
@@ -90,27 +99,25 @@ class Tfyh_toolbox
         $this->app_sessions = new Tfyh_app_sessions($this);
     }
 
-    /*
-     * ======================== Session support ==============================
-     */
+    /* ======================== Session support ============================== */
     /**
-     * A token is a sequence of random characters for different purposes. It always starts with a
-     * letter, followed by characters including numeric digits. with the information on the session
-     * owner in a token list.
-     *
+     * A token is a sequence of random characters for different purposes. It always starts with a letter,
+     * followed by characters including numeric digits. with the information on the session owner in a token
+     * list.
+     * 
      * @param int $token_length
      *            lengh of the token in characters.
      * @param bool $case_sensitive
-     *            Set true to generate case sensitive tokens with a selection of 62 characters. Else
-     *            a 32 characters sequence is used without "B", "I", "O", "S" to not confound them
-     *            with "8", "1", "0", "5".
+     *            Set true to generate case sensitive tokens with a selection of 62 characters. Else a 32
+     *            characters sequence is used without "B", "I", "O", "S" to not confound them with "8", "1",
+     *            "0", "5".
      * @return String token as generated.
      */
     public function generate_token (int $token_length, bool $case_sensitive)
     {
         $short_set = ($case_sensitive) ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" : "ACDEFGHJKLMNPQRTUVWXYZ";
         $full_set = $short_set . "0123456789";
-        $full_set_end = strlen($full_set) - 1;
+        $full_set_end = strlen($full_set) - 1; // byte count == character count
         $token = substr(str_shuffle($short_set), 0, 1);
         for ($i = 1; $i < $token_length; $i ++)
             $token .= substr($full_set, random_int(0, $full_set_end), 1);
@@ -118,11 +125,22 @@ class Tfyh_toolbox
     }
 
     /**
-     * create GUIDv4, see https://www.php.net/manual/de/function.com-create-guid.php
-     *
+     * create GUIDv4as non static function for compatibility reasons
+     * 
      * @return string Unique identifier
      */
     public function create_GUIDv4 ()
+    {
+        // TODO framework change remove non static variant
+        return self::static_create_GUIDv4();
+    }
+
+    /**
+     * create GUIDv4, see https://www.php.net/manual/de/function.com-create-guid.php
+     * 
+     * @return string Unique identifier
+     */
+    public static function static_create_GUIDv4 ()
     {
         // OSX/Linux. Windows environments, see link above
         if (function_exists('openssl_random_pseudo_bytes') === true) {
@@ -136,18 +154,48 @@ class Tfyh_toolbox
         mt_srand((double) microtime() * 10000);
         $charid = strtolower(md5(uniqid(rand(), true)));
         $hyphen = chr(45); // "-"
-        $guidv4 = substr($charid, 0, 8) . $hyphen . substr($charid, 8, 4) . $hyphen .
-                 substr($charid, 12, 4) . $hyphen . substr($charid, 16, 4) . $hyphen .
-                 substr($charid, 20, 12);
+        $guidv4 = substr($charid, 0, 8) . $hyphen . substr($charid, 8, 4) . $hyphen . substr($charid, 12, 4) .
+                 $hyphen . substr($charid, 16, 4) . $hyphen . substr($charid, 20, 12);
         return $guidv4;
     }
 
     /**
+     * Print an array as html - for debugging
+     * 
+     * @param array $a
+     *            any array
+     * @param String $indent
+     *            the current indentation for recursive calls, never to be used when calling from outside.
+     * @return string the html representation
+     */
+    public static function array_to_html (array $a, String $indent = "")
+    {
+        $html = (strlen($indent) == 0) ? "<span style=\"font-family: 'Courier New', monospace; font-size:0.9em;\">" : "";
+        $n = 0;
+        foreach ($a as $key => $value) {
+            if (is_array($value)) {
+                $html .= "$indent<b>$key:</b><br>";
+                $html .= self::array_to_html($value, $indent . "&nbsp;&nbsp;");
+            } else {
+                $disp = (is_null($value)) ? "<span style=\"color:#008;\">NULL</span>" : ((is_bool($value)) ? ("<span style=\"color:#808;\">" .
+                         (($value) ? "true" : "false") . "</span>") : ((is_string($value)) ? "<span style=\"color:#088;\">\"" .
+                         $value . "\"</span>" : $value));
+                $html .= "$indent$key: $disp<br>";
+            }
+            $n ++;
+        }
+        if ($n == 0)
+            $html .= $indent . "[]<br>";
+        if (strlen($indent) == 0)
+            $html .= "</span>";
+        return $html;
+    }
+
+    /**
      * redirect to an error page
-     *
+     * 
      * @param String $error_headline
-     *            Headline which will be displayed on the error page. Preceed by !# to suppress
-     *            error counting
+     *            Headline which will be displayed on the error page. Preceed by !# to suppress error counting
      * @param String $error_text
      *            Error explanation which will be displayed on the error page
      * @param String $calling_page
@@ -158,71 +206,79 @@ class Tfyh_toolbox
         // no endless error loop.
         if (strrpos($calling_page, "error.php") !== false)
             return;
+        $get_params = "";
+        if (count($_GET) > 0) {
+            foreach ($_GET as $key => $value)
+                $get_params .= $key . "=" . $value . "&";
+            $get_params = mb_substr($get_params, 0, mb_strlen($get_params) - 1);
+        }
         file_put_contents("../log/lasterror.txt", 
-                $calling_page . ";" . $error_headline . ";" . $error_text);
+                $calling_page . ";" . $error_headline . ";" . $error_text . ";" . $get_params);
         header("Location: ../pages/error.php");
         exit();
     }
 
     /**
-     * Encode the timestamp + validity and the user Mail to create a user login token. It will have
-     * the user mail in the middle, braced by two changing parts, the timestamp and a padding. The
-     * result will be a base64 encoded String in which three characters are replace in order to be
-     * URL-compatible: "=" by "_", "/" by "-", "+" by "*".
-     *
+     * Encode the timestamp + validity and the user Mail to create a user login token. It will have the user
+     * mail in the middle, braced by two changing parts, the timestamp and a padding. The result will be a
+     * base64 encoded String in which three characters are replace in order to be URL-compatible: "=" by "_",
+     * "/" by "-", "+" by "*".
+     * 
      * @param String $user_mail
      *            the users mail address, i.e. his account mail
      * @param String $deep_link
-     *            the page to be opened after login, if not the home page
+     *            the page to be opened after login, if not the home page, e.g.
+     *            "../forms/passwort_aendern.php"
      * @param int $validity
      *            the validity of the links in days from now.
      * @return String token created
      */
     public function create_login_token (String $user_mail, int $validity, String $deep_link)
     {
-        $message = strval(time() + $validity * 24 * 3600) . ":" . $user_mail . ":" . $deep_link . ":" .
+        $message = strval(time() + $validity * 24 * 3600) . "::" . $user_mail . "::" . $deep_link . "::" .
                  substr(str_shuffle($this->base64charsPlus), 0, 16);
+        file_put_contents("../log/token_logins.log", 
+                "[" . date("Y-m-d H:i:s", time()) . "] " . i("Tix00e|created:") . " " . json_encode($message) .
+                         "\n", FILE_APPEND);
         return str_replace("=", "_", 
                 str_replace("/", "-", 
-                        str_replace("+", "*", 
-                                $this->xor64(base64_encode($message), $this->obfuscator))));
+                        str_replace("+", "*", $this->xor64(base64_encode($message), $this->obfuscator))));
     }
 
     /**
      * Decode the user login token and validate it. See create_login_token() for token format.
-     *
+     * 
      * @param String $token
      *            Token to be validated
-     * @return mixed|boolean the plain text array, being the valitdity, the user mail and the deep
-     *         link if valid, false, if not
+     * @return mixed|boolean the plain text array, being the valitdity, the user mail and the deep link if
+     *         valid, false, if not
      */
     public function decode_login_token (String $token)
     {
-        $plain_text = explode(":", 
+        $plain_text = explode("::", 
                 base64_decode(
                         $this->xor64(
-                                str_replace("_", "=", 
-                                        str_replace("-", "/", str_replace("*", "+", $token))), 
+                                str_replace("_", "=", str_replace("-", "/", str_replace("*", "+", $token))), 
                                 $this->obfuscator)));
+        file_put_contents("../log/token_logins.log", 
+                "[" . date("Y-m-d H:i:s", time()) . "] " . i("w1eFbl|decoded:") . " " .
+                         json_encode($plain_text) . "\n", FILE_APPEND);
         if (intval($plain_text[0]) >= time())
             return $plain_text;
         else
             return false;
     }
 
-    /*
-     * ================ Data validity checks and formatting ============================
-     */
+    /* ================ Data validity checks and formatting ============================ */
     /**
-     * Returns the date in "Y-m-d" format (e.g. 2018-04-20), if the array contains a valid date.
-     * Returns false, if not. If the year value is < 100 it will be adjusted to a four digit year
-     * using this year and the 99 preceding to complete. Returns false, if the date is not valid.
-     *
+     * Returns the date in "Y-m-d" format (e.g. 2018-04-20), if the array contains a valid date. Returns
+     * false, if not. If the year value is < 100 it will be adjusted to a four digit year using this year and
+     * the 99 preceding to complete. Returns false, if the date is not valid.
+     * 
      * @param array $to_parse
-     *            has at least a field year, month and day with integer values. If the year value is
-     *            < 100 it will be adjusted to a four digit year using this year and the 99
-     *            preceding to complete. Maximum is year 2999. Returns false, if the date is not
-     *            valid.
+     *            has at least a field year, month and day with integer values. If the year value is < 100 it
+     *            will be adjusted to a four digit year using this year and the 99 preceding to complete.
+     *            Maximum is year 2999. Returns false, if the date is not valid.
      */
     private function valid_date (array $to_parse)
     {
@@ -234,8 +290,8 @@ class Tfyh_toolbox
                 $to_parse["year"] = $to_parse["year"] + 1900;
         }
         $is_valid = ($to_parse["year"] < 3000);
-        $date_uk = sprintf('%04d', $to_parse["year"]) . "-" . sprintf('%02d', $to_parse["month"]) .
-                 "-" . sprintf('%02d', $to_parse["day"]);
+        $date_uk = sprintf('%04d', $to_parse["year"]) . "-" . sprintf('%02d', $to_parse["month"]) . "-" .
+                 sprintf('%02d', $to_parse["day"]);
         $date_uk_int = strTotime($date_uk);
         if ($date_uk_int === false)
             return false;
@@ -248,12 +304,12 @@ class Tfyh_toolbox
 
     /**
      * Check, whether the date_string represents a valid date.
-     *
+     * 
      * @param String $date_string
      *            string to be checked
-     * @return a formatted date string "Y-m-d" (e.g. 2018-04-20), if $date_string is a date between
-     *         01.01.0100 and 31.12.2999, else false. Note: If the year value is < 100 it will be
-     *         adjusted to a four digit year using this year and the 99 preceding to complete.
+     * @return a formatted date string "Y-m-d" (e.g. 2018-04-20), if $date_string is a date between 01.01.0100
+     *         and 31.12.2999, else false. Note: If the year value is < 100 it will be adjusted to a four
+     *         digit year using this year and the 99 preceding to complete.
      */
     public function check_and_format_date (String $date_string)
     {
@@ -282,8 +338,8 @@ class Tfyh_toolbox
     }
 
     /**
-     * Html wrap for form errors String (Add "Fehler:" and change color, if message is not empty.
-     *
+     * Html wrap for form errors String (Add "Error:" and change color, if message is not empty.
+     * 
      * @param String $form_errors
      *            form errors String which shall be wrapped
      * @return String wrapped form errors String
@@ -291,16 +347,17 @@ class Tfyh_toolbox
     public function form_errors_to_html (String $form_errors)
     {
         if (strlen($form_errors) > 0) {
-            return '<p><span style="color:#A22;"><b>Fehler: </b> ' . $form_errors . '</span></p>';
+            return '<p><span style="color:#A22;"><b>' . i("NLNSFH|Error:") . " </b> " . $form_errors .
+                     "</span></p>";
         }
         return "";
     }
 
     /**
-     * To enable multiple use of a mail address for more than one Mitglied, mail addresses may be
-     * prefixed by an integer plus '.', e.g. 2.john.doe@nowhere.com for the son of John Doe. This
-     * here strips the prefix, if existing.
-     *
+     * To enable multiple use of a mail address for more than one Mitglied, mail addresses may be prefixed by
+     * an integer plus '.', e.g. 2.john.doe@nowhere.com for the son of John Doe. This here strips the prefix,
+     * if existing.
+     * 
      * @param String $mail_address
      *            mail address to be checked and stripped, if necessary
      * @return String mail address without prefix
@@ -317,7 +374,7 @@ class Tfyh_toolbox
 
     /**
      * Return the age of a person in years (floating point value)
-     *
+     * 
      * @param String $birthday
      *            birthday of person
      * @return age in years, false, if $birthday is not a valid date
@@ -332,11 +389,11 @@ class Tfyh_toolbox
     }
 
     /**
-     * my_bcmod - get modulus (substitute for bcmod) string my_bcmod ( string left_operand, int
-     * modulus ) left_operand can be really big, but be carefull with modulus :( by Andrius
-     * Baranauskas and Laurynas Butkus :) Vilnius, Lithuania
+     * my_bcmod - get modulus (substitute for bcmod) string my_bcmod ( string left_operand, int modulus )
+     * left_operand can be really big, but be carefull with modulus :( by Todrius Baranauskas and Laurynas
+     * Butkus :) Vilnius, Lithuania
      * https://stackoverflow.com/questions/10626277/function-bcmod-is-not-available
-     *
+     * 
      * @param String $x
      *            first value (x % y)
      * @param String $y
@@ -359,10 +416,10 @@ class Tfyh_toolbox
     }
 
     /**
-     * Check, whether the IBAN complies to IBAN rules. removes spaces from IBAN prior to check and
-     * ignores letter case. Make sure the IBAN has the apprpriate letter case when being entered in
-     * the form. Snippet copied from https://stackoverflow.com/questions/20983339/validate-iban-php
-     *
+     * Check, whether the IBAN complies to IBAN rules. removes spaces from IBAN prior to check and ignores
+     * letter case. Make sure the IBAN has the apprpriate letter case when being entered in the form. Snippet
+     * copied from https://stackoverflow.com/questions/20983339/validate-iban-php
+     * 
      * @param String $iban
      *            IBAN to be checked
      * @param bool $strict
@@ -373,24 +430,25 @@ class Tfyh_toolbox
     {
         if ($strict === false)
             $iban = strtolower(str_replace(' ', '', $iban));
-        $Countries = array('al' => 28,'ad' => 24,'at' => 20,'az' => 28,'bh' => 22,'be' => 16,
-                'ba' => 20,'br' => 29,'bg' => 22,'cr' => 21,'hr' => 21,'cy' => 28,'cz' => 24,
-                'dk' => 18,'do' => 28,'ee' => 20,'fo' => 18,'fi' => 18,'fr' => 27,'ge' => 22,
-                'de' => 22,'gi' => 23,'gr' => 27,'gl' => 18,'gt' => 28,'hu' => 28,'is' => 26,
-                'ie' => 22,'il' => 23,'it' => 27,'jo' => 30,'kz' => 20,'kw' => 30,'lv' => 21,
-                'lb' => 28,'li' => 21,'lt' => 20,'lu' => 20,'mk' => 19,'mt' => 31,'mr' => 27,
-                'mu' => 30,'mc' => 27,'md' => 24,'me' => 22,'nl' => 18,'no' => 15,'pk' => 24,
-                'ps' => 29,'pl' => 28,'pt' => 25,'qa' => 29,'ro' => 24,'sm' => 27,'sa' => 24,
-                'rs' => 22,'sk' => 24,'si' => 19,'es' => 24,'se' => 24,'ch' => 21,'tn' => 24,
-                'tr' => 26,'ae' => 23,'gb' => 22,'vg' => 24
+        elseif (substr(strtoupper($iban), 0, 2) != substr($iban, 0, 2))
+            return false; // allow only upper case letters
+        $iban = strtolower($iban);
+        $Countries = array('al' => 28,'ad' => 24,'at' => 20,'az' => 28,'bh' => 22,'be' => 16,'ba' => 20,
+                'br' => 29,'bg' => 22,'cr' => 21,'hr' => 21,'cy' => 28,'cz' => 24,'dk' => 18,'do' => 28,
+                'ee' => 20,'fo' => 18,'fi' => 18,'fr' => 27,'ge' => 22,'de' => 22,'gi' => 23,'gr' => 27,
+                'gl' => 18,'gt' => 28,'hu' => 28,'is' => 26,'ie' => 22,'il' => 23,'it' => 27,'jo' => 30,
+                'kz' => 20,'kw' => 30,'lv' => 21,'lb' => 28,'li' => 21,'lt' => 20,'lu' => 20,'mk' => 19,
+                'mt' => 31,'mr' => 27,'mu' => 30,'mc' => 27,'md' => 24,'me' => 22,'nl' => 18,'no' => 15,
+                'pk' => 24,'ps' => 29,'pl' => 28,'pt' => 25,'qa' => 29,'ro' => 24,'sm' => 27,'sa' => 24,
+                'rs' => 22,'sk' => 24,'si' => 19,'es' => 24,'se' => 24,'ch' => 21,'tn' => 24,'tr' => 26,
+                'ae' => 23,'gb' => 22,'vg' => 24
         );
-        $Chars = array('a' => 10,'b' => 11,'c' => 12,'d' => 13,'e' => 14,'f' => 15,'g' => 16,
-                'h' => 17,'i' => 18,'j' => 19,'k' => 20,'l' => 21,'m' => 22,'n' => 23,'o' => 24,
-                'p' => 25,'q' => 26,'r' => 27,'s' => 28,'t' => 29,'u' => 30,'v' => 31,'w' => 32,
-                'x' => 33,'y' => 34,'z' => 35
+        $Chars = array('a' => 10,'b' => 11,'c' => 12,'d' => 13,'e' => 14,'f' => 15,'g' => 16,'h' => 17,
+                'i' => 18,'j' => 19,'k' => 20,'l' => 21,'m' => 22,'n' => 23,'o' => 24,'p' => 25,'q' => 26,
+                'r' => 27,'s' => 28,'t' => 29,'u' => 30,'v' => 31,'w' => 32,'x' => 33,'y' => 34,'z' => 35
         );
         
-        if (strlen($iban) == $Countries[substr($iban, 0, 2)]) {
+        if (strlen($iban) == $Countries[substr(strtolower($iban), 0, 2)]) {
             
             $MovedChar = substr($iban, 4) . substr($iban, 0, 4);
             $MovedCharArray = str_split($MovedChar);
@@ -412,8 +470,28 @@ class Tfyh_toolbox
     }
 
     /**
+     * Check whether the given String is a valid internationalization resource reference. String must be 7 to
+     * 30 character long, with a 6 digit token sequence followed by a pipe character at start.
+     * 
+     * @param String $i18n_resource_reference        the String to check     
+     * @return boolean true, if the syntax matches a i18n resource reference
+     * 
+     */
+    public function is_valid_i18n_reference (String $i18n_resource_reference)
+    {
+        if (strlen($i18n_resource_reference) < 7)
+            return false;
+        if (strpos($i18n_resource_reference, "|") != 6)
+            return false;
+        for ($i = 0; $i < 6; $i ++)
+            if (strpos($this->i18n_token_chars, substr($i18n_resource_reference, $i, 1)) === false)
+                return false;
+        return true;
+    }
+
+    /**
      * Check, whether the pwd complies to password rules.
-     *
+     * 
      * @param String $pwd
      *            password to be checked
      * @return String list of errors found. Returns empty String, if no errors were found.
@@ -422,7 +500,7 @@ class Tfyh_toolbox
     {
         $errors = "";
         if ((strlen($pwd) < 8) || (strlen($pwd) > 32)) {
-            $errors .= "Das Kennwort muss zwischen 8 Zeichen und 32 Zeichen lang sein. ";
+            $errors .= i("aJ5Cy9|The password must be bet...") . " ";
         }
         $numbers = (preg_match("#[0-9]+#", $pwd)) ? 1 : 0;
         $lowercase = (preg_match("#[a-z]+#", $pwd)) ? 1 : 0;
@@ -431,15 +509,13 @@ class Tfyh_toolbox
         $specialchars = (preg_match("#[!-/]+#", $pwd) || preg_match("#[:-@]+#", $pwd) ||
                  preg_match("#[\[-`]+#", $pwd) || preg_match("#[{-~]+#", $pwd)) ? 1 : 0;
         if (($numbers + $lowercase + $uppercase + $specialchars) < 3)
-            $errors .= "Im Kennwort müssen Zeichen aus drei Gruppen der folgenden vier Gruppen " .
-                     "enthalten sein: Ziffern, Kleinbuchstaben, Großbuchstaben, Sonderzeichen. " .
-                     "Zulässige Sonderzeichen sind !\"#$%&'*+,-./:;<=>?@[\]^_`{|}~";
+            $errors .= i("iJUmCH|The password must contai...");
         return $errors;
     }
 
     /**
      * Little String mix helper
-     *
+     * 
      * @param String $p            
      * @return string
      */
@@ -454,13 +530,11 @@ class Tfyh_toolbox
         return $P;
     }
 
-    /*
-     * ================= file handling and zipping ===========================
-     */
+    /* ================= file handling and zipping =========================== */
     
     /**
      * Parse a file system tree and return all relative path names of files. Runs recursively.
-     *
+     * 
      * @param array $file_paths
      *            an array with file path, to which the subsequents paths shall be added.
      * @param String $branch_root_dir
@@ -469,8 +543,7 @@ class Tfyh_toolbox
      *            the relative path within $branch_root_dir of the directory which shall be parsed
      * @return array the $file_paths with all files of this branch added.
      */
-    private function list_files_of_tree (array $file_paths, String $branch_root_dir, 
-            String $parent_dir)
+    private function list_files_of_tree (array $file_paths, String $branch_root_dir, String $parent_dir)
     {
         $handle = opendir($branch_root_dir . $parent_dir);
         if ($handle !== false) {
@@ -492,7 +565,7 @@ class Tfyh_toolbox
 
     /**
      * Parse a file system branch and return all relative path names of files
-     *
+     * 
      * @param String $branch_root_dir
      *            the directory which shall be parsed. Must end with "/".
      * @return array the $file_paths with all files of this branch added.
@@ -505,26 +578,26 @@ class Tfyh_toolbox
 
     /**
      * Unzipper for backup import. See https://www.php.net/manual/de/ref.zip.php
-     *
+     * 
      * @param String $zip_path
-     *            the path to the zip archive without ".zip" extension. The extension will be
-     *            stripped off to create the unzip-directory location for unzipping the archive.
-     *            This directory must not exist.
-     * @return string|array array of filepaths (Strings, including the unzip-directory) of extracted
-     *         files on success, else an error message String
+     *            the path to the zip archive without ".zip" extension. The extension will be stripped off to
+     *            create the unzip-directory location for unzipping the archive. This directory must not
+     *            exist.
+     * @return string|array array of filepaths (Strings, including the unzip-directory) of extracted files on
+     *         success, else an error message String
      */
     public function unzip (String $zip_path)
     {
         $dir_path = substr($zip_path, 0, strrpos($zip_path, "."));
         if (! file_exists($zip_path))
-            return "#Error: Zip path $zip_path doesn't exist.";
+            return i("XFt9AM|#Error: Zip path °%1° do...", $zip_path);
         if (file_exists($dir_path))
-            return "#Error: Target directory $dir_path for unzipping already exists, aborted.";
+            return i("5qjixH|#Error: Target directory...", $dir_path);
         
         mkdir($dir_path);
         $resource = zip_open($zip_path);
         if (! $resource)
-            return "#Error while opening the $zip_path file.";
+            return i("6qoA8U|#Error while opening the...", $zip_path);
         $file_list = [];
         $zip_entry = zip_read($resource);
         while ($zip_entry) {
@@ -540,7 +613,7 @@ class Tfyh_toolbox
                         $base .= "$k/";
                         if (! file_exists($base)) {
                             if (mkdir($base) === false)
-                                $file_list[] = "#Error mkdir failed on directory " . $base . "<br>";
+                                $file_list[] = i("Gg90pW|#Error mkdir failed on d...", $base) . "<br>";
                         }
                     }
                 }
@@ -559,7 +632,7 @@ class Tfyh_toolbox
 
     /**
      * Store a set of files into a given archive.
-     *
+     * 
      * @param array $src_filepaths
      *            array if String holding a list of file paths which will be zipped.
      * @param String $zip_filepath
@@ -581,13 +654,13 @@ class Tfyh_toolbox
 
     /**
      * Store a String into the given filepath and create a zip archive at the $filepath . ".zip".
-     *
+     * 
      * @param String $filename
-     *            name file within archive returned. The archive will be named "$filename.zip". MUST
-     *            NOT BE SET BY THE USER. This must not include a path to the file but uses the
-     *            current path to avoid, that the zip archive itself shows a path. It is therefore
-     *            NECESSARY that the "$filename.zip" is chosen in a way not to exist in whatever
-     *            path of the site in order to ensure that nothing is overwritten.
+     *            name file within archive returned. The archive will be named "$filename.zip". MUST NOT BE
+     *            SET BY THE USER. This must not include a path to the file but uses the current path to
+     *            avoid, that the zip archive itself shows a path. It is therefore NECESSARY that the
+     *            "$filename.zip" is chosen in a way not to exist in whatever path of the site in order to
+     *            ensure that nothing is overwritten.
      * @return the name of the zip archive created.
      */
     public function zip ($string_to_zip, $filename)
@@ -596,18 +669,18 @@ class Tfyh_toolbox
         $zip_filename = $filename . ".zip";
         
         if ($zip->open($zip_filename, ZipArchive::CREATE) !== TRUE) {
-            exit("cannot open <$zip_filename>\n");
+            exit("cannot open <$zip_filename>\n"); // no i18n required
         }
         if ($zip->addFromString($filename, $string_to_zip) !== true)
-            exit("cannot write zip <$zip_filename>\n");
+            exit("cannot write zip <$zip_filename>\n"); // no i18n required
         $zip->close();
         return $zip_filename;
     }
 
     /**
-     * Return a file to the user. The file will afterwards be deleted (unlinked). Uses the "header"
-     * function, i. e. must be called before any other output is generated by the calling page.
-     *
+     * Return a file to the user. The file will afterwards be deleted (unlinked). Uses the "header" function,
+     * i. e. must be called before any other output is generated by the calling page.
+     * 
      * @param String $filepath
      *            path to file which shall be returned.
      * @param String $contenttype
@@ -616,8 +689,7 @@ class Tfyh_toolbox
     public function return_file_to_user (String $filepath, String $contenttype)
     {
         // return file.
-        $filename = (strpos($filepath, "/") !== false) ? substr($filepath, 
-                strrpos($filepath, "/") + 1) : $filepath;
+        $filename = (strpos($filepath, "/") !== false) ? substr($filepath, strrpos($filepath, "/") + 1) : $filepath;
         if (file_exists($filepath)) {
             header($_SERVER["SERVER_PROTOCOL"] . " 200 OK");
             header("Cache-Control: public"); // needed for internet explorer
@@ -629,15 +701,14 @@ class Tfyh_toolbox
             // unlink($filepath); That results in an execution error. Clean up later.
             exit();
         } else {
-            die("Error: File @ " . $filepath . " not found.");
+            die(i("8XihSu|Error: File °%1° not fou...", $filepath));
         }
     }
 
     /**
-     * Return a file to the user. The file will afterwards not be deleted (unlinked). Uses the
-     * "header" function, i. e. must be called before any other output is generated by the calling
-     * page.
-     *
+     * Return a file to the user. The file will afterwards not be deleted (unlinked). Uses the "header"
+     * function, i. e. must be called before any other output is generated by the calling page.
+     * 
      * @param String $filepath
      *            path to file which shall be returned.
      */
@@ -655,27 +726,25 @@ class Tfyh_toolbox
             // unlink($filepath); That results in an execution error. Clean up later.
             exit();
         } else {
-            die("Error: File @ " . $filepath . " not found.");
+            die(i("6HrzgB|Error: File °%1° not fou...", $filepath));
         }
     }
 
     /**
-     * Return it files in a compressed archive to the user. Uses the "header" function, i. e. must
-     * be called before any other output is generated by the calling page.
-     *
+     * Return it files in a compressed archive to the user. Uses the "header" function, i. e. must be called
+     * before any other output is generated by the calling page.
+     * 
      * @param array $src_filepaths
      *            array if String holding a list of file paths which will be zipped.
      * @param String $zip_filename
-     *            name of archive returned. MUST NOT BE SET BY THE USER. This does not include the
-     *            path to the file but uses the current path to avoid, that the zip archive itself
-     *            shows a path. It is therefore NECESSARY that the $zip_filename is chosen in a way
-     *            not to exist in whatever path of the site in order to ensure that nothing is
-     *            overwritten.
+     *            name of archive returned. MUST NOT BE SET BY THE USER. This does not include the path to the
+     *            file but uses the current path to avoid, that the zip archive itself shows a path. It is
+     *            therefore NECESSARY that the $zip_filename is chosen in a way not to exist in whatever path
+     *            of the site in order to ensure that nothing is overwritten.
      * @param bool $remove_files
      *            set true to remove files after delivery to user.
      */
-    public function return_files_as_zip (array $src_filepaths, String $zip_filename, 
-            bool $remove_files)
+    public function return_files_as_zip (array $src_filepaths, String $zip_filename, bool $remove_files)
     {
         $this->zip_files($src_filepaths, $zip_filename);
         if ($remove_files) {
@@ -687,17 +756,17 @@ class Tfyh_toolbox
     }
 
     /**
-     * Zip a csv-String and return it as file to the user. Uses the "header" function, i. e. must be
-     * called before any other output is generated by the calling page.
-     *
+     * Zip a csv-String and return it as file to the user. Uses the "header" function, i. e. must be called
+     * before any other output is generated by the calling page.
+     * 
      * @param String $csv
      *            String which shall be zipped and forwarded.
      * @param String $fname
-     *            name file within archive returned. The archive will be named "$fname.zip". MUST
-     *            NOT BE SET BY THE USER. This must not include a path to the file but uses the
-     *            current path to avoid, that the zip archive itself shows a path. It is therefore
-     *            NECESSARY that the "$fname.zip" is chosen in a way not to exist in whatever path
-     *            of the site in order to ensure that nothing is overwritten.
+     *            name file within archive returned. The archive will be named "$fname.zip". MUST NOT BE SET
+     *            BY THE USER. This must not include a path to the file but uses the current path to avoid,
+     *            that the zip archive itself shows a path. It is therefore NECESSARY that the "$fname.zip" is
+     *            chosen in a way not to exist in whatever path of the site in order to ensure that nothing is
+     *            overwritten.
      */
     public function return_string_as_zip (String $string, String $fname)
     {
@@ -707,21 +776,20 @@ class Tfyh_toolbox
 
     /**
      * Scan a directory and return the contents as HTML table
-     *
+     * 
      * @param String $dir
-     *            directory which shall be scanned. Typically "../uploads". This directory must not
-     *            be the root of the web-site. Because the directory browser provides access to it
-     *            for every user.
+     *            directory which shall be scanned. Typically "../uploads". This directory must not be the
+     *            root of the web-site. Because the directory browser provides access to it for every user.
      * @param int $level_of_top
-     *            level of top of the branch for the upload, default is 1, corresponds to
-     *            ../uploads. Must not be < 1. Exaple: if there is a root dir
-     *            ../uploads/all_users_branch the $level_of_top = 2.
+     *            level of top of the branch for the upload, default is 1, corresponds to ../uploads. Must not
+     *            be < 1. Exaple: if there is a root dir ../uploads/all_users_branch the $level_of_top = 2.
      * @return HTML table
      */
     public function get_dir_contents (String $dir, int $level_of_top = 1)
     {
         $result = "<table>";
-        $result .= "<tr class=flist><td>&nbsp;</td><td>" . $dir . "</td><td>Aktion</td></tr>";
+        $result .= "<tr class=flist><td>&nbsp;</td><td>" . $dir . "</td><td>" . i("F7t6Jn|Action") .
+                 "</td></tr>";
         $items = 0;
         $cdir = scandir($dir);
         if ($cdir)
@@ -729,50 +797,48 @@ class Tfyh_toolbox
                 if (! in_array($value, array(".",".."
                 ))) {
                     if (is_dir($dir . DIRECTORY_SEPARATOR . $value)) {
-                        $result .= "<tr class=flist><td><img src='../resources/drive_folder-20px.png' title='Verzeichnis' /></td>" .
-                                 "<td><a href='?cdir=" . $dir . "/" . $value . "'>" . $value .
-                                 "</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>" . "<td><a href='?xdir=" . $dir .
-                                 "/" . $value .
-                                 "'><img src='../resources/delete_file-20px.png' title='Verzeichnis löschen, wenn leer' /></a>" .
-                                 "</td></tr>\n";
+                        $result .= "<tr class=flist><td><img src='../resources/drive_folder-20px.png' title='" .
+                                 i("hX0dDX|Directory") . "' /></td>" . "<td><a href='?cdir=" . $dir . "/" .
+                                 $value . "'>" . $value . "</a>&nbsp;&nbsp;&nbsp;&nbsp;</td>" .
+                                 "<td><a href='?xdir=" . $dir . "/" . $value .
+                                 "'><img src='../resources/delete_file-20px.png' title='" .
+                                 i("MyjroH|delete directory, if emp...") . "' /></a>" . "</td></tr>\n";
                         $items ++;
                     } else {
-                        $result .= "<tr class=flist><td><img src='../resources/drive_file-20px.png' title='Datei' /></td>" .
-                                 "<td>" . $value .
-                                 "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='?dfile=" . $dir . "/" .
-                                 $value .
-                                 "'><img src='../resources/download_file-20px.png' title='Datei herunterladen' /></a>" .
-                                 "<a href='?xfile=" . $dir . "/" . $value .
-                                 "'><img src='../resources/delete_file-20px.png' title='Datei löschen' /></a>" .
-                                 "</td></tr>\n";
+                        $result .= "<tr class=flist><td><img src='../resources/drive_file-20px.png' title='" .
+                                 i("wdLerX|File") . "' /></td>" . "<td>" . $value .
+                                 "&nbsp;&nbsp;&nbsp;&nbsp;</td><td><a href='?dfile=" . $dir . "/" . $value .
+                                 "'><img src='../resources/download_file-20px.png' title='" .
+                                 i("cmjKme|Download file") . "' /></a>" . "<a href='?xfile=" . $dir . "/" .
+                                 $value . "'><img src='../resources/delete_file-20px.png' title='" .
+                                 i("c32XmM|Delete file") . "' /></a>" . "</td></tr>\n";
                         $items ++;
                     }
                 }
             }
         if ($items == 0)
-            $result .= "<tr class=flist><td>(leer)</td><td>(kein Inhalt gefunden.)</td></tr>";
+            $result .= "<tr class=flist><td>" . i("HpsAcF|(empty)") . "</td><td>" .
+                     i("26WMwL|no content found.") . "</td></tr>";
         $parentdir = (strrpos($dir, "/") > 0) ? substr($dir, 0, strrpos($dir, "/")) : $dir;
         // the topmost offered parent directory is the "uploads" folder to ensure
         // entry into the application files hierarchy is not possible.
         if (count(explode("/", $parentdir)) > $level_of_top)
-            $result .= "<tr class=flist><td><img src='../resources/drive_file-20px.png' title='eine Ebene höher' /></td><td><a href='?cdir=" .
-                     $parentdir . "'>" . $parentdir . "</a></td></tr>";
+            $result .= "<tr class=flist><td><img src='../resources/drive_file-20px.png' title='" .
+                     i("CBxZVW|One level higher") . "' /></td><td><a href='?cdir=" . $parentdir . "'>" .
+                     $parentdir . "</a></td></tr>";
         $result .= "</table>";
         
         return $result;
     }
 
-    /*
-     * ======================= csv read support ==============================
-     */
+    /* ======================= csv read support ============================== */
     /**
-     * Read the first csv-line into an array of entries. CSV-format must be with text delimiter = "
-     * and separator = ;. The line must be encoded in UTF-8.
-     *
+     * Read the first csv-line into an array of entries. CSV-format must be with text delimiter = " and
+     * separator = ;. The line must be encoded in UTF-8.
+     * 
      * @param String $csv
      *            A String with a csv table
-     * @return array of "row" => the line which was read, plus a "remainder"s => remainder of the
-     *         $csv String.
+     * @return array of "row" => the line which was read, plus a "remainder"s => remainder of the $csv String.
      */
     public function read_csv_line (String $csv)
     {
@@ -788,10 +854,8 @@ class Tfyh_toolbox
                 $completed_line .= $line . "\n";
             else
                 $remainder .= $line . "\n";
-            /*
-             * a line is complete, if the count of quotes is even. Because a quote itself is replace
-             * by two quotes, and a quoted entry always has a quote on both ends.
-             */
+            /* a line is complete, if the count of quotes is even. Because a quote itself is replace by two
+             * quotes, and a quoted entry always has a quote on both ends. */
             $cnt_quotes = substr_count($completed_line, "\"");
             if (! $raw_row && ($cnt_quotes % 2 == 0)) {
                 // line is complete. Read it into indexed array
@@ -799,20 +863,34 @@ class Tfyh_toolbox
             }
         }
         if (strlen($remainder) > 0)
-            $remainder = substr($remainder, 0, strlen($remainder) - 1);
+            $remainder = mb_substr($remainder, 0, mb_strlen($remainder) - 1);
         return array("row" => $raw_row,"remainder" => $remainder
         );
     }
 
     /**
-     * Simple csv entry encoder. If the $entry contains one of ' \n', ';' '"' all "-quotes are
-     * duplicated and one '"' added at front and end.
-     *
+     * Simple csv entry encoder as non static version. If the $entry contains one of ' \n', ';' '"' all
+     * "-quotes are duplicated and one '"' added at front and end.
+     * 
      * @param String $entry
      *            entry which shall be encoded
      * @return String the encoded entry.
      */
     public function encode_entry_csv (String $entry = null)
+    {
+        // TODO framework change remove non static variant
+        return self::static_encode_entry_csv($entry);
+    }
+
+    /**
+     * Simple csv entry encoder. If the $entry contains one of ' \n', ';' '"' all "-quotes are duplicated and
+     * one '"' added at front and end.
+     * 
+     * @param String $entry
+     *            entry which shall be encoded
+     * @return String the encoded entry.
+     */
+    public static function static_encode_entry_csv (String $entry = null)
     {
         if (is_null($entry))
             return "";
@@ -823,13 +901,12 @@ class Tfyh_toolbox
     }
 
     /**
-     * Read a simplified csv-file into an array of rows, each row becoming a named array with the
-     * names being the first line entries. CSV-format must be with text delimiter = " and separator
-     * = ;. There must not be any space character left or right of the delimiter. First line entries
-     * must not contain line breaks. Lines ending with unquoted " \" will be joined with the
-     * following line. The file is preferrably encoded in UTF-8, but ISO-8859-1 should also work due
-     * to automatic encoding detection.
-     *
+     * Read a simplified csv-file into an array of rows, each row becoming a named array with the names being
+     * the first line entries. CSV-format must be with text delimiter = " and separator = ;. There must not be
+     * any space character left or right of the delimiter. First line entries must not contain line breaks.
+     * Lines ending with unquoted " \" will be joined with the following line. The file is preferrably encoded
+     * in UTF-8, but ISO-8859-1 should also work due to automatic encoding detection.
+     * 
      * @param String $file_path
      *            path to file with csv table
      * @return array the table which was read. In case of errors, it will be an empty array [].
@@ -837,13 +914,28 @@ class Tfyh_toolbox
     public function read_csv_array (String $file_path)
     {
         // read csv file.
-        if (file_exists($file_path))
+        if (file_exists($file_path)) {
             $content = file_get_contents($file_path);
-        else
+            return $this->read_csv_string_array($content);
+        } else
             return [];
-        
-        $text = mb_convert_encoding($content, 'UTF-8', 
-                mb_detect_encoding($content, 'UTF-8, ISO-8859-1', true));
+    }
+
+    /**
+     * Read a simplified csv-String into an array of rows, each row becoming a named array with the names
+     * being the first line entries. CSV-format must be with text delimiter = " and separator = ;. There must
+     * not be any space character left or right of the delimiter. First line entries must not contain line
+     * breaks. Lines ending with unquoted " \" will be joined with the following line. The file is preferrably
+     * encoded in UTF-8, but ISO-8859-1 should also work due to automatic encoding detection.
+     * 
+     * @param String $csv_string
+     *            String with csv table
+     * @return array the table which was read. In case of errors, it will be an empty array [].
+     */
+    public function read_csv_string_array (String $csv_string)
+    {
+        $text = mb_convert_encoding($csv_string, 'UTF-8', 
+                mb_detect_encoding($csv_string, 'UTF-8, ISO-8859-1', true));
         $lines = Explode("\n", $text);
         $table = [];
         
@@ -864,21 +956,15 @@ class Tfyh_toolbox
                     }
                     $completed_line .= $line;
                     $is_continued = false;
-                    /*
-                     * a line is complete, if the count of quotes is even. Because a quote itself is
-                     * replace by two quotes, and a quoted entry always has a quote on both ends.
-                     */
+                    /* a line is complete, if the count of quotes is even. Because a quote itself is replace
+                     * by two quotes, and a quoted entry always has a quote on both ends. */
                     $cnt_quotes = substr_count($completed_line, "\"");
                     if ($cnt_quotes % 2 == 0) {
                         // line is complete, except a special line endis found: ' \' denoting that
                         // the line is continued.
-                        if (strcmp(substr($completed_line, strlen($completed_line) - 2), " \\") == 0) {
-                            $completed_line = substr($completed_line, 0, 
-                                    strlen($completed_line) - 2);
+                        if (strcmp(mb_substr($completed_line, mb_strlen($completed_line) - 2), " \\") == 0) {
+                            $completed_line = substr($completed_line, 0, strlen($completed_line) - 2);
                             $is_continued = true;
-                            // var_dump($line);
-                            // var_dump($completed_line);
-                            // exit();
                         } else {
                             // line is complete. Read it intoindexedarray
                             $raw_row = str_getcsv($completed_line, ";", "\"");
@@ -900,24 +986,20 @@ class Tfyh_toolbox
         return $table;
     }
 
-    /*
-     * =========================== load throttling ====================================
-     */
+    /* =========================== load throttling ==================================== */
     /**
-     * <p>Measure the frequency of web page or api events and delay the return from this function in
-     * case of too igh load. Meant to prevent from machine attacks.</p><p>Method: A set
-     * $events_limit of transaction timestamps resides in the $directory, e.g. /log/inits, or
-     * /log/api_inits. When this function is called the eldest existing timestamp is read. If it is
-     * older than now minus the $event_monitor_period, it is replaced by the current time and
-     * becomes the youngest timestamp. If not, the return of the function is delayed by an
-     * appropriate amount of time to throttle the activities which are timestamped in $directory to
-     * $events_limit. </p><p>Reading the pointer to the eldest timstamp, overwriting this timestamp
-     * and increasing the pointer is all done in this function.</p><p>Throttling is logged as a
-     * warning every hour as long as it takes.</p>
-     *
+     * <p>Measure the frequency of web page or api events and delay the return from this function in case of
+     * too igh load. Meant to prevent from machine attacks.</p><p>Method: A set $events_limit of transaction
+     * timestamps resides in the $directory, e.g. /log/inits, or /log/api_inits. When this function is called
+     * the eldest existing timestamp is read. If it is older than now minus the $event_monitor_period, it is
+     * replaced by the current time and becomes the youngest timestamp. If not, the return of the function is
+     * delayed by an appropriate amount of time to throttle the activities which are timestamped in $directory
+     * to $events_limit. </p><p>Reading the pointer to the eldest timstamp, overwriting this timestamp and
+     * increasing the pointer is all done in this function.</p><p>Throttling is logged as a warning every hour
+     * as long as it takes.</p>
+     * 
      * @param String $directory
-     *            directory for timestamp files which record the events, e.g. "inits", "api_txs" or
-     *            "errors"
+     *            directory for timestamp files which record the events, e.g. "inits", "api_txs" or "errors"
      * @param int $events_limit
      *            limit of events per event_monitor_period. Should normally be 3000 for "inits",
      *            "transactions/" and 100 for "errors"
@@ -926,10 +1008,8 @@ class Tfyh_toolbox
      */
     public function load_throttle (String $directory, int $events_limit, String $source_file)
     {
-        /*
-         * method uses a ring buffer of time stamps. A pointer stored within the pointer file always
-         * indicates the eldest timestamp written.
-         */
+        /* method uses a ring buffer of time stamps. A pointer stored within the pointer file always indicates
+         * the eldest timestamp written. */
         // read the oldest timestamp
         $events_dir = $this->log_dir . $directory;
         if (! file_exists($events_dir))
@@ -942,8 +1022,9 @@ class Tfyh_toolbox
         else
             $timestamp = 0; // oldest possible value
         $monitor_period_start = time() - $this->event_monitor_period;
-        $overload_details = "Pointer: " . $pointer . ", Timestamp@pointer: " . $timestamp .
-                 ", monitor_period_start: " . $monitor_period_start . ", time now: " . time();
+        $overload_details = i("liKdKf|Pointer:") . " " . $pointer . ", " . i("TMSdWl|timestamp there:") . " " .
+                 $timestamp . ", " . i("d7WN8G|start of monitor period:") . " " . $monitor_period_start . ", " .
+                 i("rFKAAZ|time now:") . " " . time();
         // move the pointer to the second eldest timestamp, before refreshing the eldest one.
         $pointer ++;
         if ($pointer >= $events_limit)
@@ -961,29 +1042,28 @@ class Tfyh_toolbox
             if ($delay_seconds > 5)
                 $delay_seconds = 5;
             $this->logger->log(1, 0, 
-                    "Event overload in $directory. Period=" . $this->event_monitor_period .
-                             " seconds, limit=" . $events_limit .
-                             " events, waited for $delay_seconds seconds.");
+                    i("5jvc1j|Overload at °%1°. Monito...", $directory, strval($this->event_monitor_period), 
+                            strval($events_limit), strval($delay_seconds)));
             $this->load_warning($directory, $source_file);
             sleep($delay_seconds);
         }
     }
 
     /**
-     * Compile a specific overload warning text and send a mail to the admin on the event every ten
-     * minutes as long as the situation persists.
-     *
+     * Compile a specific overload warning text and send a mail to the admin on the event every ten minutes as
+     * long as the situation persists.
+     * 
      * @param String $event_directory
-     *            directory for timestamp files which record the events, e.g. "inits/", "api_txs/"
-     *            or "errors/". Set to "" to only get the sessions.
+     *            directory for timestamp files which record the events, e.g. "inits/", "api_txs/" or
+     *            "errors/". Set to "" to only get the sessions.
      * @param String $source_file
      *            file name of the file which triggered the warning.
      * @param String $monitored_timestamps            
      */
     public function load_warning (String $event_directory, String $source_file)
     {
-        $log_text = "Overload diagnosis data. Event triggered by '$source_file', for '$event_directory'\n";
-
+        $log_text = i("cpLo7L|Overload diagnostic data...", $source_file, $event_directory) . "\n";
+        
         // Log the timestamps
         if (strlen($event_directory) > 0) {
             $event_pointer = intval(file_get_contents("../log/" . $event_directory . "pointer"));
@@ -991,9 +1071,10 @@ class Tfyh_toolbox
                      " timestamps:\n";
             for ($i = - 3; $i < 4; $i ++)
                 $log_text .= strval($event_pointer + $i) . ";" . date("Y-m-d H:i:s", 
-                        filectime("../log/" . $event_directory . $event_pointer + $i)) . "\n";
+                        filectime("../log/" . $event_directory . strval($event_pointer + $i))) . "\n";
         }
         
+        // no i18n for the following data section needed
         // List the sessions
         include_once "../classes/tfyh_app_sessions.php";
         $app_sessions = new Tfyh_app_sessions($this);
@@ -1015,9 +1096,7 @@ class Tfyh_toolbox
         
         // send warning every hour minutes as long as the situation persists.
         $last_warning_diagnosis = "../log/overload/" . $event_directory;
-        if (! file_exists($last_warning_diagnosis) ||
-                 (filectime($last_warning_diagnosis) < (time() - 3600)))
-        {
+        if (! file_exists($last_warning_diagnosis) || (filectime($last_warning_diagnosis) < (time() - 3600))) {
             // store the event log.
             file_put_contents($last_warning_diagnosis, $log_text);
             // Send Mail to webmaster and return a very short String.
@@ -1025,18 +1104,15 @@ class Tfyh_toolbox
             $mail_handler = new Tfyh_mail_handler($this->config->get_cfg());
             $mail_was_sent = $mail_handler->send_mail($mail_handler->system_mail_sender, 
                     $mail_handler->system_mail_sender, $mail_handler->mail_webmaster, "", "", 
-                    "Lastabwehr bei " . $source_file, 
-                    "Warnung: Die Lastabwehr auf der Anwendungseite " . $source_file .
-                             " hat angeschlagen.\nDetails:\n" . $log_text);
+                    i("R74F98|Load defence for") . " " . $source_file, 
+                    i("ZS7PdQ|Warning: The load thrott...", $source_file) . $log_text);
         }
     }
 
-    /*
-     * ================== Miscellaneous ===========================
-     */
+    /* ================== Miscellaneous =========================== */
     /**
      * Return a timestamp for a booking, based on separate date and time.
-     *
+     * 
      * @param String $date_str
      *            UK-formatted date string
      * @param String $hour_str
@@ -1051,12 +1127,26 @@ class Tfyh_toolbox
     }
 
     /**
+     * Convert a date String to a time for DE and ISO format dates (23.07.2021 and 2021-07-23)
+     * 
+     * @param String $date_string            
+     */
+    public function datetotime (String $date_string)
+    {
+        if (strpos(($date_string), ".") !== false) {
+            $dmy = explode(".", $date_string);
+            $date_string = $dmy[2] . "-" . $dmy[1] . "-" . $dmy[0];
+        }
+        return strtotime($date_string);
+    }
+
+    /**
      * Get the encoded parameters of a request as plain associative array.
-     *
+     * 
      * @param String $msg
-     *            encoded message of GET URL. is a set of "name;value" pairs, separated by ";;" and
-     *            as full String encoded base64. Neither names nor values must contain ";"
-     *            characters. Control characters like line feed are discouraged and not tested.
+     *            encoded message of GET URL. is a set of "name;value" pairs, separated by ";;" and as full
+     *            String encoded base64. Neither names nor values must contain ";" characters. Control
+     *            characters like line feed are discouraged and not tested.
      */
     public function get_msg_params (String $msg)
     {
@@ -1065,7 +1155,7 @@ class Tfyh_toolbox
 
     /**
      * "Encrypt" a base64 String by xoring it with a key. Decryption is the same as encryption.
-     *
+     * 
      * @param String $plain
      *            the plain text, must be a base64 String.
      * @param String $key

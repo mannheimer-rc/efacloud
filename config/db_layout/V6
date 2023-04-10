@@ -1,5 +1,5 @@
 
-# V5 add efaCloudArchived table and removes the efaCloudPartners table.
+# V6 remove ecract from efa2logbook, shorten elngth of statisitics records
 
 efa2autoincrement.Sequence;varchar;192;NULL;NULL;x;
 efa2autoincrement.IntValue;int;0;NULL;NULL;;

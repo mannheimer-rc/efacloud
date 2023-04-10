@@ -3,8 +3,42 @@
 /**
  * class file for the efaCloud table auditing
  */
+include_once "../classes/efa_tables.php";
+include_once "../classes/tfyh_list.php";
+
 class Efa_archive
 {
+
+    /**
+     * The prefix identifying an archived record.
+     */
+    public static $archive_id_prefix = "archiveID:";
+
+    /**
+     * The archive settings. ITS SEQUENCE MUST BE THE SAME AS FOR THE LISTS IN '../config/lists/efaArchive'.
+     * This is also the complete list of tables for which records will be archived at all. The default for
+     * corresponds to Efa_tables::$forever_days.
+     */
+    public static $archive_settings = [
+            "efa2boatdamages" => ["ListParam" => "DamageAgeDays","deleteAtOrigin" => true,
+                    "archiveID_at" => "Notes"
+            ],
+            "efa2boatreservations" => ["ListParam" => "ReservationAgeDays","deleteAtOrigin" => true,
+                    "archiveID_at" => "Reason"
+            ],
+            "efa2clubwork" => ["ListParam" => "ClubworkAgeDays","deleteAtOrigin" => true,
+                    "archiveID_at" => "Description"
+            ],
+            "efa2logbook" => ["ListParam" => "SessionAgeDays","deleteAtOrigin" => true,
+                    "archiveID_at" => "Comments"
+            ],
+            "efa2messages" => ["ListParam" => "MessageAgeDays","deleteAtOrigin" => true,
+                    "archiveID_at" => "Subject"
+            ],
+            "efa2persons" => ["ListParam" => "PersonsAgeDays","deleteAtOrigin" => false,
+                    "archiveID_at" => "LastName"
+            ]
+    ];
 
     /**
      * The data base connection socket.
@@ -17,49 +51,9 @@ class Efa_archive
     private $toolbox;
 
     /**
-     * The efa tables function set.
-     */
-    private $efa_tables;
-
-    /**
      * The afCloudUserID of the archiving user.
      */
     private $app_user_id;
-
-    /**
-     * The prefix identifying an archived record.
-     */
-    public static $archive_id_prefix = "archiveID:";
-
-    /**
-     * the maximum age in days corresponding to 2147483648 seconds to avoid an overflow error (~68 years)
-     */
-    public static $max_age_days = 24855;
-
-    /**
-     * The archive settings. ITS SEQUENCE MUST BE THE SAME AS FOR THE LISTS IN '../config/lists/efaArchive'.
-     * This is also the complete list of tables for which records will be archived at all.
-     */
-    public $archive_settings = [
-            "efa2boatdamages" => ["ListParam" => "DamageAgeDays","MinAgeDays" => 24855,
-                    "Origin" => "delete","archiveID_at" => "Notes"
-            ],
-            "efa2boatreservations" => ["ListParam" => "ReservationAgeDays","MinAgeDays" => 24855,
-                    "Origin" => "delete","archiveID_at" => "Reason"
-            ],
-            "efa2clubwork" => ["ListParam" => "ClubworkAgeDays","MinAgeDays" => 24855,
-                    "Origin" => "delete","archiveID_at" => "Description"
-            ],
-            "efa2logbook" => ["ListParam" => "SessionAgeDays","MinAgeDays" => 24855,"Origin" => "delete",
-                    "archiveID_at" => "Comments"
-            ],
-            "efa2messages" => ["ListParam" => "MessageAgeDays","MinAgeDays" => 24855,"Origin" => "delete",
-                    "archiveID_at" => "Subject"
-            ],
-            "efa2persons" => ["ListParam" => "PersonsAgeDays","MinAgeDays" => 24855,"Origin" => "update",
-                    "archiveID_at" => "LastName"
-            ]
-    ];
 
     /**
      * Maximm number of records to be archived for a table in one go, for performance reasons
@@ -67,41 +61,36 @@ class Efa_archive
     private $max_count_archived = 250;
 
     /**
-     * The list of tables in which records which are marked as deleted shall be finally purge. Note: they must
-     * be kept to inform all clients of their deletion. Once they are purged, a client will no more be
-     * notified of this deletion.
-     */
-    private $tables_to_purge_deleted = ["efa2autoincrement","efa2boatdamages","efa2boatreservations",
-            "efa2boats","efa2boatstatus","efa2clubwork","efa2crews","efa2destinations","efa2fahrtenabzeichen",
-            "efa2groups","efa2logbook","efa2messages","efa2persons","efa2sessiongroups","efa2statistics",
-            "efa2status","efa2waters"
-    ];
-
-    /**
      * public Constructor.
      * 
+     * @param Tfyh_toolbox $toolbox
+     *            application toolbox
+     * @param Tfyh_socket $socket
+     *            the socket to connect to the database
      * @param int $appUserID
      *            the ID of the application user of the user who performs the statement. For change logging.
      */
-    public function __construct (Efa_tables $efa_tables, Tfyh_toolbox $toolbox, int $appUserID)
+    public function __construct (Tfyh_toolbox $toolbox, Tfyh_socket $socket, int $appUserID)
     {
-        $this->efa_tables = $efa_tables;
-        $this->socket = $efa_tables->socket;
         $this->toolbox = $toolbox;
+        $this->socket = $socket;
         $this->app_user_id = $appUserID;
-        // read age parameters configuration
-        include_once "../classes/tfyh_list.php";
         $id = 1;
         $cfg = $toolbox->config->get_cfg();
-        foreach ($this->archive_settings as $for_table => $archive_setting) {
-            // the
-            $archive_min_age_days = (! isset($cfg[$archive_setting["ListParam"]])) ? self::$max_age_days : ((intval(
-                    $cfg[$archive_setting["ListParam"]]) > 180) ? intval($cfg[$archive_setting["ListParam"]]) : 180);
-            $this->archive_settings[$for_table]["MinAgeDays"] = $archive_min_age_days;
-            $archive_list = new Tfyh_list("../config/lists/efaArchive", $id, "", $efa_tables->socket, $toolbox);
+        foreach (self::$archive_settings as $for_table => $archive_setting) {
+            // Get the minimum age in days for archiving configuration.
+            $configured = (isset($cfg[$archive_setting["ListParam"]])) ? intval(
+                    $cfg[$archive_setting["ListParam"]]) : 0;
+            // default is forever, i. e. no archiving at all.
+            if ($configured <= 0)
+                $configured = Efa_tables::$forever_days;
+            // set the parameter to use to be minimum 180 days
+            self::$archive_settings[$for_table]["MinAgeDays"] = max($configured, 180);
+            $archive_list = new Tfyh_list("../config/lists/efaArchive", $id, "", $this->socket, $toolbox);
             if (strcmp($archive_list->get_table_name(), $for_table) != 0) {
-                echo "Die Reihenfolge der archive-Listen in ../config/lists/efaArchive muss den Tabellen in den Efa_archive::\$archive_settings entsprechen. " .
-                         "Fehler bei: $for_table. ABBRUCH.";
+                echo i(
+                        "Pb2uDW|The order of the archive...", 
+                        $for_table);
                 exit();
             }
             $id ++;
@@ -118,8 +107,8 @@ class Efa_archive
      */
     private function value32_validity (String $validity)
     {
-        if (strlen($validity) > $this->efa_tables->forever_len_gt)
-            return $this->efa_tables->forever32; // 32 bit maximum number
+        if (strlen($validity) > Efa_tables::$forever_len_gt)
+            return Efa_tables::$forever32int; // 32 bit maximum number
         if (strlen($validity) > 3)
             return intval(substr($validity, 0, strlen($validity) - 3));
         return 0;
@@ -145,7 +134,7 @@ class Efa_archive
         $archive_entry = json_encode($record);
         // limit size to 64k
         $cut_len = 65535 - 4096;
-        while (strlen($archive_entry) > 65535) {
+        while (strlen($archive_entry) > 65535) { // strlen == byte length
             foreach ($record as $key => $value)
                 if (strlen($value) > $cut_len)
                     $record[$key] = substr(strval($record[$key]), 0, $cut_len);
@@ -154,11 +143,6 @@ class Efa_archive
         }
         $archive_record = ["Time" => date("Y-m-d H:i:s"),"Table" => $tablename,"Record" => $archive_entry
         ];
-        // === test code
-        // file_put_contents("../log/tmp", date("Y-m-d H:i:s") . " - " . $tablename . ": Would copy to
-        // archive: " . $archive_entry . "\n", FILE_APPEND);
-        // $archive_ID = 999999;
-        // === test code
         $archive_ID = $this->socket->insert_into($this->app_user_id, "efaCloudArchived", $archive_record);
         return $archive_ID;
     }
@@ -179,19 +163,18 @@ class Efa_archive
     {
         if (! isset($named_row_to_move["ecrid"]) || (strlen($named_row_to_move["ecrid"]) < 5)) {
             $this->toolbox->logger->log(2, $this->app_user_id, 
-                    "Failed to archive Id: " . $named_row_to_move[0] . " for " . $table_name .
-                             ". No ecrid available.");
+                    i("xfM8pp|Failed to archive Id: %1...", $named_row_to_move[0], 
+                            $table_name));
             return false;
         }
         $ecrid = $named_row_to_move["ecrid"];
-        $modification = $this->archive_settings["$table_name"]["Origin"];
         
         // retrieve the full record
         $full_record_to_move = $this->socket->find_record($table_name, "ecrid", $ecrid);
         if ($full_record_to_move === false) {
             $this->toolbox->logger->log(2, $this->app_user_id, 
-                    "Failed to archive Id: " . $named_row_to_move[0] . " for " . $table_name .
-                             ". No matching record found for ecrid " . $ecrid);
+                    i("WsILpP|Failed to archive Id: %1...", 
+                            $named_row_to_move[0], $table_name, $ecrid));
             return false;
         }
         
@@ -199,30 +182,31 @@ class Efa_archive
         $archive_id = $this->copy_to_archive($table_name, $full_record_to_move);
         if (! is_numeric($archive_id)) {
             $this->toolbox->logger->log(2, $this->app_user_id, 
-                    "Failed to copy Id: " . $named_row_to_move[0] . " for " . $table_name .
-                             " to archive. Reason: ") . $archive_id;
+                    i("Ll1PcH|Failed to copy Id: %1 fo...", $named_row_to_move[0], $table_name)) .
+                     " " . $archive_id;
             return false;
         }
         
-        // create the stub
-        $nominal_stub = $this->create_archive_stub($table_name, $archive_id, $full_record_to_move, time(), 
-                $full_record_to_move["ChangeCount"]);
-        if (in_array("ecrhis", Efa_tables::$server_gen_fields[$table_name]))
-            $nominal_stub["ecrhis"] = "REMOVE!";
-        // === test code
-        // file_put_contents("../log/tmp",
-        // $table_name . ": Would update record with: " . json_encode($emptied_record) . "\n",
-        // FILE_APPEND);
-        // $update_result = "";
-        // === test code
-        $update_result = $this->socket->update_record_matched($this->app_user_id, $table_name, 
-                ["ecrid" => $ecrid
-                ], $nominal_stub);
-        if (strlen($update_result) > 0) {
-            $this->toolbox->logger->log(2, $this->app_user_id, 
-                    "Failed to empty or delete record after archiving: " . $named_row_to_move . " for " .
-                             $table_name . ". Error: " . $update_result);
-            return false;
+        // delete the record or create the stub
+        if (self::$archive_settings["$table_name"]["deleteAtOrigin"]) {
+            $this->socket->delete_record_matched($this->app_user_id, $table_name, 
+                    ["ecrid" => $ecrid
+                    ]);
+        } else {
+            $nominal_stub = $this->create_archive_stub($table_name, $archive_id, $full_record_to_move);
+            $nominal_stub = Efa_tables::register_modification($nominal_stub, time(), 
+                    $full_record_to_move["ChangeCount"], "insert");
+            if (in_array("ecrhis", Efa_tables::$server_gen_fields[$table_name]))
+                $nominal_stub["ecrhis"] = "REMOVE!";
+            $update_result = $this->socket->update_record_matched($this->app_user_id, $table_name, 
+                    ["ecrid" => $ecrid
+                    ], $nominal_stub);
+            if (strlen($update_result) > 0) {
+                $this->toolbox->logger->log(2, $this->app_user_id, 
+                        i("3tX6IN|Failed to empty or delet...", 
+                                $named_row_to_move[0], $table_name)) . " " . $update_result;
+                return false;
+            }
         }
         return true;
     }
@@ -240,24 +224,23 @@ class Efa_archive
      */
     public function get_all_archived_versions (array $archive_record)
     {
-        if (! in_array($archive_record["Table"], $this->efa_tables->is_versionized))
+        if (! in_array($archive_record["Table"], Efa_tables::$versionized_table_names))
             return false;
-        $archived_record = $this->decode_record($archive_record);
+        $archived_record = $this->decode_archived_record($archive_record);
         if (! isset($archived_record["Id"]))
             return false;
         $id = $archived_record["Id"];
         $id_entry = '"Id":"' . $id . '"';
         $list_args = ["{IdEntry}" => $id_entry
         ];
-        include_once "../classes/tfyh_list.php";
-        $object_list = new Tfyh_list("../config/lists/efaArchive", 9, "Datensätze zu Objekt", $this->socket, 
-                $this->toolbox, $list_args);
+        $object_list = new Tfyh_list("../config/lists/efaArchive", 9, "", $this->socket, $this->toolbox, 
+                $list_args);
         $object_rows = $object_list->get_rows();
         $object_records = [];
         foreach ($object_rows as $object_row) {
             $object_archive_record = $object_list->get_named_row($object_row);
-            $object_archived_record = $this->decode_record($object_archive_record);
-            $invalidFrom32 = $this->efa_tables->value_validity32($object_archived_record["InvalidFrom"]);
+            $object_archived_record = $this->decode_archived_record($object_archive_record);
+            $invalidFrom32 = Efa_tables::value_validity32($object_archived_record["InvalidFrom"]);
             $object_records[$invalidFrom32] = $object_archive_record;
         }
         ksort($object_records);
@@ -272,17 +255,19 @@ class Efa_archive
      *            in the $archive_record["Record"] field
      * @return array the "Record" decoded to an associate array, from the json String.
      */
-    public function decode_record (array $archive_record)
+    public function decode_archived_record (array $archive_record)
     {
+        if (! isset($archive_record["Record"]))
+            return false;
         // see
         // https://stackoverflow.com/questions/24312715/json-encode-returns-null-json-last-error-msg-gives-control-character-error-po
         $ctrl_replaced = preg_replace('/[[:cntrl:]]/', '', $archive_record["Record"]);
         return json_decode($ctrl_replaced, true);
-        $archive_record;
     }
 
     /**
-     * Create an archive reference record to be used in the origin table.
+     * Create an archive reference record to be used in the origin table. Please remember to register the
+     * modification afterwards in order to ensure propagation to clients.
      * 
      * @param String $tablename
      *            the name of the table the record belongs to
@@ -290,31 +275,24 @@ class Efa_archive
      *            the ID of the archive record to link to
      * @param array $full_record
      *            the full record to create the stub from
-     * @param int $last_modified_secs
-     *            time for LastModified timestamp, in seconds; "000" will be added.
-     * @param String $change_count
-     *            the change count to be used in the stub
      */
-    private function create_archive_stub (String $tablename, int $archive_id, array $full_record, 
-            int $last_modified_secs, String $change_count)
+    private function create_archive_stub (String $tablename, int $archive_id, array $full_record)
     {
         $is_efa2persons = strcmp($tablename, "efa2persons") == 0;
         $is_efa2logbook = strcmp($tablename, "efa2logbook") == 0;
-        $last_modification = $this->archive_settings[$tablename]["Origin"];
         // if so, continue by creating the nominal stub
-        $nominal_stub = $this->efa_tables->clear_record_for_delete($tablename, $full_record);
+        include_once "../classes/efa_record.php";
+        $nominal_stub = Efa_record::clear_record_for_delete($tablename, $full_record);
+        $nominal_stub["LastModification"] = (self::$archive_settings[$tablename]["deleteAtOrigin"]) ? "delete" : "update";
         // add the archive ID to provide a link to the archived record
         $archive_id_reference = self::$archive_id_prefix . $archive_id;
-        $nominal_stub[$this->archive_settings[$tablename]["archiveID_at"]] = $archive_id_reference;
+        $nominal_stub[self::$archive_settings[$tablename]["archiveID_at"]] = $archive_id_reference;
         // add the virtual fields like in the cronjob routine to avoid ping-pong between
         // cronjob virtual field generation in stubs and stub autocorrection.
-        if ($is_efa2logbook)
-            $nominal_stub["AllCrewIds"] = $this->efa_tables->create_AllCrewIds_field($nominal_stub);
-        if ($is_efa2persons)
-            $nominal_stub["FirstLastName"] = $nominal_stub["FirstName"] . " " . $nominal_stub["LastName"];
-        $last_modification = $this->archive_settings[$tablename]["Origin"];
-        $nominal_stub = $this->efa_tables->register_modification($nominal_stub, $last_modified_secs, 
-                $change_count, $last_modification);
+        $nominal_stub_plus_vf = Efa_tables::add_virtual_fields($nominal_stub, $tablename, $this->toolbox, 
+                $this->socket);
+        if ($nominal_stub_plus_vf !== false)
+            $nominal_stub = $nominal_stub_plus_vf;
         if (in_array("ecrhis", Efa_tables::$server_gen_fields[$tablename]))
             $nominal_stub["ecrhis"] = "";
         return $nominal_stub;
@@ -329,9 +307,12 @@ class Efa_archive
      * 
      * @param String $tablename
      *            the table to check and fix the stubs for
+     * @param int $min_age_days_for_check
+     *            the minimum age in days of the stubs which shall be checked to avoid daily checking, in
+     *            particularly of the larger records and tables.
      * @return number the count of fixed stubs
      */
-    public function autocorrect_archive_stubs (String $tablename)
+    public function autocorrect_archive_stubs (String $tablename, int $min_age_days_for_check)
     {
         // prepare activity
         $start_row = 0;
@@ -342,9 +323,9 @@ class Efa_archive
         $skipped = 0;
         $dublets = 0;
         $ecrids_handled = [];
-        $modification = $this->archive_settings[$tablename]["Origin"];
-        $is_delete_stub = strcmp($modification, "delete") == 0;
-        $min_age_secs = $this->archive_settings[$tablename]["MinAgeDays"] * 86400;
+        $is_delete_stub = self::$archive_settings[$tablename]["deleteAtOrigin"];
+        $last_modification = ($is_delete_stub) ? "delete" : "update";
+        $min_age_secs = self::$archive_settings[$tablename]["MinAgeDays"] * 86400;
         $now = time();
         do {
             // Check all existing archived records
@@ -356,21 +337,16 @@ class Efa_archive
                     $checked ++;
                     $archive_id = $archive_record["ID"];
                     $archived_at = strtotime($archive_record["Time"]);
-                    $archived_record = $this->decode_record($archive_record);
+                    $archived_record = $this->decode_archived_record($archive_record);
                     // check whether this ecrid is a dublet in the archive
                     if (isset($ecrids_handled[$archived_record["ecrid"]])) {
-                        // echo "<br>dublet found for ecrid '" . $archived_record["ecrid"] . "'.
-                        // Previous:<br>";
-                        // var_dump($ecrids_handled[$archived_record["ecrid"]]);
-                        // echo "<br>Dublet:<br>";
-                        // var_dump($archived_record);
-                        if ($this->efa_tables->values_are_equal($ecrids_handled[$archived_record["ecrid"]], 
+                        if (Efa_tables::records_are_equal($ecrids_handled[$archived_record["ecrid"]], 
                                 $archived_record, false)) {
                             $delete_result = $this->socket->delete_record($this->app_user_id, 
                                     "efaCloudArchived", $archive_id);
-                            // echo "<br>dublet removal ID $archive_id: $delete_result<hr>";
+                            // echo "<br>ecrid dublet removal ID $archive_id: $delete_result<hr>";
                         } else {
-                            // echo "<br>Different, thus kept.<hr>";
+                            // echo "<br>ecrid dublet with different content, thus kept.<hr>";
                         }
                         $dublets ++;
                         // check whether a stub is required and can be created.
@@ -379,38 +355,33 @@ class Efa_archive
                              (! $is_delete_stub || ($now - $archived_at <= $min_age_secs))) {
                         $ecrids_handled[$archived_record["ecrid"]] = $archived_record;
                         // if so, continue by creating the nominal stub
-                        $nominal_stub = $this->create_archive_stub($tablename, $archive_id, $archived_record, 
-                                $now, $archived_record["ChangeCount"]);
+                        $nominal_stub = $this->create_archive_stub($tablename, $archive_id, $archived_record);
                         // check the current stub
                         $current_stub = $this->socket->find_record($tablename, "ecrid", 
                                 $archived_record["ecrid"]);
                         if ($current_stub === false) {
                             // current stub is missing, insert the nominal stub
-                            // echo $archive_id_reference . "<br>nominal stub<br>";
-                            // var_dump($nominal_stub);
-                            // add the Change Management fields
+                            $nominal_stub = Efa_tables::register_modification($nominal_stub, $now, 
+                                    $archived_record["ChangeCount"], "insert");
                             $insert_result = $this->socket->insert_into($this->app_user_id, $tablename, 
                                     $nominal_stub);
-                            // echo "<br>insert_result: $insert_result <hr>";
                             if (is_numeric($insert_result))
                                 $corrected ++;
                             else
                                 $failed ++;
-                        } else {
-                            // current stub is existing, check for correctness.
+                        } elseif ((time() - intval(
+                                Efa_tables::value_validity32($current_stub["LastModified"]))) >
+                                 $min_age_days_for_check) {
+                            // current stub is existing and old enough, check for correctness.
                             // add the Change Management fields, using the current stubs change count
                             $change_count_current = $current_stub["ChangeCount"];
-                            $current_stub = $this->efa_tables->register_modification($current_stub, $now, 
-                                    $change_count_current, $modification);
+                            $current_stub = Efa_tables::register_modification($current_stub, $now, 
+                                    $change_count_current, $current_stub["LastModification"]);
                             // adapt the nominal_stub ChangeCount field for equality checks
-                            $nominal_stub = $this->efa_tables->register_modification($nominal_stub, $now, 
-                                    $change_count_current, $modification);
-                            // echo $archive_id_reference . "<br>nominal stub<br>";
-                            // var_dump($nominal_stub);
-                            // echo "<br>current stub<br>";
-                            // var_dump($current_stub);
+                            $nominal_stub = Efa_tables::register_modification($nominal_stub, $now, 
+                                    $change_count_current, $last_modification);
                             // compare the current with the nominal stub
-                            if (! $this->efa_tables->values_are_equal($nominal_stub, $current_stub, false)) {
+                            if (! Efa_tables::records_are_equal($nominal_stub, $current_stub, false)) {
                                 if (in_array("ecrhis", Efa_tables::$server_gen_fields[$tablename]))
                                     $nominal_stub["ecrhis"] = "REMOVE!";
                                 $change_result = $this->socket->update_record_matched($this->app_user_id, 
@@ -423,10 +394,9 @@ class Efa_archive
                                     $failed ++;
                             }
                             // else echo "<br>no change.<hr>";
-                        }
-                    } else {
-                        // echo "<br>skipped.<hr>";
-                        $skipped ++;
+                        } else
+                            // echo "<br>skipped.<hr>";
+                            $skipped ++;
                     }
                 }
             $start_row += $chunk_size;
@@ -434,9 +404,12 @@ class Efa_archive
                  ($corrected < $this->max_count_archived));
         
         if ($corrected == 0)
-            return "";
-        $result = "Überprüft: $checked, korrigiert: $corrected, Korrektur gescheitert: $failed," .
-                 " Dubletten in Archiv: $dublets, keine Referenz erforderlich: $skipped.";
+            $result = i("XIGJqp|checked/total count: %1/...", strval($checked - $skipped), 
+                    $checked);
+        else
+            $result = i(
+                    "mfU3JA|checked: %1, corrected: ...", 
+                    $checked, $corrected, $failed, $dublets);
         return $result;
     }
 
@@ -491,27 +464,31 @@ class Efa_archive
         $pos_field_for_invalidFrom = $versionized_list->get_field_index("InvalidFrom");
         // abort on inconsistency of programmed application configuration
         if (($pos_field_for_uuid === false) || ($pos_field_for_invalidFrom === false)) {
-            echo "Efa_archive::versionized_to_archive hit \$pos_field_for_uuid === false for table $table_name. Aborting.";
+            echo i(
+                    "deBLXi|Efa_archive::versionized...", 
+                    $table_name);
             exit();
         }
         $pos_of_archive_id_in_list = $versionized_list->get_field_index(
-                $this->archive_settings[$table_name]["archiveID_at"]);
+                self::$archive_settings[$table_name]["archiveID_at"]);
         // abort on inconsistency of programmed application configuration
         if ($pos_of_archive_id_in_list === false) {
-            echo "Efa_archive::versionized_to_archive hit \$pos_of_archive_id_in_list === false for table $table_name. Aborting.";
+            echo i(
+                    "4c2kZc|Efa_archive::versionized...", 
+                    $table_name);
             exit();
         }
         
         $versionized_rows = $versionized_list->get_rows();
         $count_archived = 0;
         $count_failed = 0;
-        $min_age_secs = $this->archive_settings[$table_name]["MinAgeDays"] * 86400;
+        $min_age_secs = self::$archive_settings[$table_name]["MinAgeDays"] * 86400;
         
         $this_id_to_archive = false; // default, the value will be set with the first not archived row.
         foreach ($versionized_rows as $versionized_row) {
             // the first record of an object is kept, thus needs special treatment.
             $first_record_of_id = strcmp($versionized_row[$pos_field_for_uuid], $last_uuid) != 0;
-            $invalidFromSecs = (is_null($versionized_row[$pos_field_for_invalidFrom])) ? 0 : $this->efa_tables->value_validity32(
+            $invalidFromSecs = (is_null($versionized_row[$pos_field_for_invalidFrom])) ? 0 : Efa_tables::value_validity32(
                     $versionized_row[$pos_field_for_invalidFrom]);
             // check whether this object was already archived.
             $is_archived = $first_record_of_id && (strpos($versionized_row[$pos_of_archive_id_in_list], 
@@ -554,7 +531,7 @@ class Efa_archive
         $simple_rows = $simple_list->get_rows();
         $count_archived = 0;
         $count_failed = 0;
-        $min_age_secs = $this->archive_settings[$table_name]["MinAgeDays"] * 86400;
+        $min_age_secs = self::$archive_settings[$table_name]["MinAgeDays"] * 86400;
         foreach ($simple_rows as $simple_row) {
             $named_row = $simple_list->get_named_row($simple_row);
             // THERE IS CURRENTLY NO CHECK FOR REFERENTIAL INTEGRITY, NEED CAN ARISE IF TABLES ARE ADDED.
@@ -574,37 +551,66 @@ class Efa_archive
     }
 
     /**
-     * Restore an arcived record from the archive back to the table. Updates the table record, increases
-     * ChangeCount and updates LastModified timestamp by one second, if the stub is still existing, to trigger
-     * client synchronisation. Deletes the archived record after successful resore.
+     * Restore a single record from the archive. In case of success the $archive_record will be removed from
+     * the efaCloudArchived table and an empty String is returned. In case of failure an error message ist
+     * returned.
      * 
-     * @param int $archive_id
-     *            the ID of the archive record
-     * @param String $tablename
-     *            the name of the table into which the record shall be resotred
-     * @param array $archived_record
-     *            the archived record, already json_decoded.
+     * @param array $archive_record
+     *            the archive record to be restored as associative array.
      */
-    private function restore_from_archive (int $archive_id, String $tablename, array $archived_record)
+    private function restore_one_from_archive (array $archive_record)
     {
-        $stub = $this->socket->find_record($tablename, "ecrid", $archived_record["ecrid"]);
-        $restored = false;
-        if ($stub === false) {
-            $result = $this->socket->insert_into($this->app_user_id, $tablename, $archived_record);
-            if (is_numeric($result))
-                $restored = true;
+        $result_message = "";
+        $archive_id = $archive_record["ID"];
+        $tablename = $archive_record["Table"];
+        $archived_at = strtotime($archive_record["Time"]);
+        $archived_record = $this->decode_archived_record($archive_record);
+        if (! is_null($archived_record) && is_array($archived_record)) {
+            $stub = $this->socket->find_record_matched($tablename, 
+                    ["ecrid" => $archived_record["ecrid"]
+                    ]);
+            if ($stub !== false) {
+                // if a stub is existing, use its ChangeCount to trigger synchronisation ...
+                $restore_record = Efa_tables::register_modification($archived_record, time(), 
+                        $stub["ChangeCount"], "update");
+                // ... and update the stub.
+                $update_result = $this->socket->update_record_matched($this->app_user_id, $tablename, 
+                        ["ecrid" => $archived_record["ecrid"]
+                        ], $restore_record);
+                if (strlen($update_result) == 0) {
+                    // delete the archived record after restore
+                    $this->socket->delete_record_matched($this->app_user_id, "efaCloudArchived", 
+                            ["ID" => $archive_id
+                            ]);
+                } else {
+                    $result_message .= i(
+                            "VG4gUV|The archive record #%1 c...", 
+                            $archive_id) . " " . $update_result . "<br>";
+                }
+            } else {
+                // if no stub is there, the archived records ChangeCount ...
+                $restore_record = Efa_tables::register_modification($archived_record, time(), 
+                        $archived_record["ChangeCount"], "update");
+                // and insert the record instead of updating.
+                $insert_result = $this->socket->insert_into($this->app_user_id, $tablename, $restore_record);
+                if (is_numeric($insert_result)) {
+                    // if the deletion of the archive record fails, this is ignored. The ecrid uniqueness will
+                    // prevent the record from duplication when trying to again restore the record.
+                    $this->socket->delete_record_matched($this->app_user_id, "efaCloudArchived", 
+                            ["ID" => $archive_id
+                            ]);
+                } else {
+                    $result_message .= i(
+                            "o1UBxC|The archive record #%1 c...", 
+                            $archive_id) . " " . $insert_result . "<br>";
+                }
+            }
         } else {
-            $archived_record = $this->efa_tables->register_modification($archived_record, time(), 
-                    $stub["ChangeCount"], "update");
-            $result = $this->socket->update_record_matched($this->app_user_id, $tablename, 
-                    ["ecrid"
-                    ], $archived_record);
-            if (strlen($result) == 0)
-                $restored = true;
+            $result_message .= i(
+                    "CZ56mL|Archive record #%1 could...", 
+                    $archive_id) . "<br>";
         }
-        if ($restored)
-            $result = $this->socket->delete_record($this->app_user_id, "efaCloudArchived", $archive_id);
-        return $result;
+        return $result_message;
     }
 
     /**
@@ -612,42 +618,27 @@ class Efa_archive
      */
     public function restore_form_archive (String $tablename, int $archived_less_than_days_ago)
     {
-        $restore_list_args = ["{ArchivedLessThanDaysAgo}" => $archived_less_than_days_ago,
-                "{Table}" => $tablename
-        ];
-        $restore_list = new Tfyh_list("../config/lists/efaArchive", count($this->archive_settings) + 1, "", 
-                $this->efa_tables->socket, $this->toolbox, $restore_list_args);
-        $restore_rows = $restore_list->get_rows();
-        $successes = 0;
-        $failed = 0;
-        foreach ($restore_rows as $restore_row) {
-            $archive_record = $restore_list->get_named_row($restore_row);
-            $archive_id = $archive_record["ID"];
-            $archived_at = strtotime($archive_record["Time"]);
-            $archived_record = $this->decode_record($archive_record);
-            $stub = $this->socket->find_record_matched($tablename, 
-                    ["ecrid" => $archived_record["ecrid"]
-                    ]);
-            if ($stub !== false)
-                // if a stub is existing, use its ChangeCount to trigger synchronisation
-                $restore_record = $this->efa_tables->register_modification($archived_record, time(), 
-                        $stub["ChangeCount"], "update");
-            else
-                $restore_record = $this->efa_tables->register_modification($archived_record, time(), 
-                        $archived_record["ChangeCount"], "update");
-            $update_result = $this->socket->update_record_matched($this->app_user_id, $tablename, 
-                    ["ecrid" => $archived_record["ecrid"]
-                    ], $restore_record);
-            if (strlen($update_result) == 0) {
-                $successes ++;
-                $this->socket->delete_record_matched($this->app_user_id, "efaCloudArchived", 
-                        ["ID" => $archive_id
-                        ]);
-            } else
-                $failed ++;
+        try {
+            $restore_list_args = ["{ArchivedLessThanDaysAgo}" => $archived_less_than_days_ago,
+                    "{Table}" => $tablename
+            ];
+            $restore_list = new Tfyh_list("../config/lists/efaArchive", count(self::$archive_settings) + 1, "", 
+                    $this->socket, $this->toolbox, $restore_list_args);
+            $restore_rows = $restore_list->get_rows();
+            $successes = 0;
+            $failed = 0;
+            $failure_log = "";
+            foreach ($restore_rows as $restore_row) {
+                $archive_record = $restore_list->get_named_row($restore_row);
+            }
+            return i(
+                    "0LiLBm|Restore completed for re...", 
+                    $tablename, $archived_less_than_days_ago, $successes, $failed) . " " . $failure_log;
+        } catch (Exception $e) {
+            return i(
+                    "bZbb82|The restore for records ...", 
+                    $tablename, $archived_less_than_days_ago) . $e->getMessage();
         }
-        return "Die Wiederherstellung für Datensätze aus $tablename, die vor weniger als $archived_less_than_days_ago " .
-                 "Tagen archiviert wurden, ist abgeschlossen: $successes mal erfolgreich, $failed nicht erfolgreich.";
     }
 
     /**
@@ -659,8 +650,7 @@ class Efa_archive
         $info = "";
         
         // define the list to use
-        include_once '../classes/tfyh_list.php';
-        foreach ($this->archive_settings as $for_table => $archive_setting) {
+        foreach (self::$archive_settings as $for_table => $archive_setting) {
             // The archiving trigger can never be less than 180 days.
             $list_args = ["{" . $archive_setting["ListParam"] . "}" => $archive_setting["MinAgeDays"]
             ]; // These arguments are not needed for the versionized list, but do no harm.
@@ -668,7 +658,7 @@ class Efa_archive
                     $this->toolbox, $list_args);
             // The table name is needed to ditinguish the handling
             $table_name = $archive_target_list->get_table_name();
-            if (in_array($table_name, $this->efa_tables->is_versionized)) {
+            if (in_array($table_name, Efa_tables::$versionized_table_names)) {
                 $info .= $this->versionized_to_archive($archive_target_list, $archive_setting);
             } else {
                 $info .= $this->non_versionized_to_archive($archive_target_list);
@@ -676,43 +666,9 @@ class Efa_archive
             $id ++;
         }
         if (strlen($info) == 0)
-            $info = "no records to be archived.";
+            $info = i("bKEeu8|no records to be archive...");
         else
-            $info = substr($info, 0, strlen($info) - 2);
-        return $info;
-    }
-
-    /**
-     * Purge all deleted records of all tables, if too old.
-     */
-    public function purge_outdated_deleted ()
-    {
-        $cfg = $this->toolbox->config->get_cfg();
-        // Default is 100 years = never.
-        $purgeDeletedAgeDays = (isset($cfg["PurgeDeletedAgeDays"]) && (strlen($cfg["PurgeDeletedAgeDays"]) > 0)) ? intval(
-                $cfg["PurgeDeletedAgeDays"]) : 36500;
-        $info = "";
-        if ($purgeDeletedAgeDays > 0)
-            foreach ($this->tables_to_purge_deleted as $tablename) {
-                $deleted_cnt = $this->socket->count_records($tablename, 
-                        ["LastModification" => "delete"
-                        ], "=");
-                $sql_cmd = "DELETE FROM `" . $tablename .
-                         "` WHERE (`LastModification` = 'delete') AND (`LastModified` < ((UNIX_TIMESTAMP() - " .
-                         $purgeDeletedAgeDays . " * 86400) * 1000))";
-                // === test code
-                // file_put_contents("../log/tmp", $tablename . ": Would execute purge: " . $sql_cmd . "\n",
-                // FILE_APPEND);
-                // === test code
-                $this->socket->query($sql_cmd);
-                $affected_rows = $this->socket->affected_rows();
-                if (($affected_rows > 0) || ($deleted_cnt > 0))
-                    $info .= $tablename . ": " . $affected_rows . "/" . $deleted_cnt . ", ";
-            }
-        if (strlen($info) == 0)
-            $info = "no deleted records were found";
-        else
-            $info = substr($info, 0, strlen($info) - 2);
+            $info = mb_substr($info, 0, mb_strlen($info) - 2);
         return $info;
     }
 }

@@ -30,13 +30,13 @@ $db_name = $socket->get_db_name();
 
 // ===== define admin user default configuration
 // set defaults
-$$cfg_db_default["ecadmin_vorname"] = "Alex";
-$$cfg_db_default["ecadmin_nachname"] = "Admin";
-$$cfg_db_default["ecadmin_mail"] = "alex.admin@efacloud.org";
-$$cfg_db_default["ecadmin_id"] = "1142";
-$$cfg_db_default["ecadmin_Name"] = "alexa";
-$$cfg_db_default["ecadmin_password"] = "123Test!";
-$$cfg_db_default["ecadmin_password_confirm"] = $$cfg_db_default["ecadmin_password"];
+$cfg_db_default["ecadmin_vorname"] = "Alex";
+$cfg_db_default["ecadmin_nachname"] = "Admin";
+$cfg_db_default["ecadmin_mail"] = "alex.admin@efacloud.org";
+$cfg_db_default["ecadmin_id"] = "1142";
+$cfg_db_default["ecadmin_Name"] = "alexa";
+$cfg_db_default["ecadmin_password"] = "123Test!";
+$cfg_db_default["ecadmin_password_confirm"] = $cfg_db_default["ecadmin_password"];
 
 // ===== Form texts for admin user configuration
 $cfg_db_description["ecadmin_vorname"] = "Vorname des efacloud Server Admins";
@@ -71,17 +71,17 @@ echo file_get_contents('../config/snippets/page_02_nav_to_body');
 <?php
 if ((isset($_GET['done']) && intval($_GET["done"]) == 1)) {
     
-    foreach ($$cfg_db_default as $key => $value)
-        $$cfg_db_to_use[$key] = $$cfg_db_default[$key];
+    foreach ($cfg_db_default as $key => $value)
+        $cfg_db_to_use[$key] = $cfg_db_default[$key];
     
     // read entered values into $cfg_to_use array.
-    foreach ($$cfg_db_default as $key => $value) {
+    foreach ($cfg_db_default as $key => $value) {
         $new_value = $_POST[$key];
         if (! is_null($new_value) && (strlen($new_value) > 0))
-            $$cfg_db_to_use[$key] = $_POST[$key];
+            $cfg_db_to_use[$key] = $_POST[$key];
     }
     // check password
-    if (strcmp($$cfg_db_to_use["ecadmin_password"], $$cfg_db_to_use["ecadmin_password_confirm"]) != 0) {
+    if (strcmp($cfg_db_to_use["ecadmin_password"], $cfg_db_to_use["ecadmin_password_confirm"]) != 0) {
         ?>
 	<h4>Die Kennwörter stimmen nicht überein. Bitte korrigieren!</h4>
 	<p>
@@ -91,7 +91,7 @@ if ((isset($_GET['done']) && intval($_GET["done"]) == 1)) {
         echo "</div>";
         exit();
     }
-    if (strlen($toolbox->check_password($$cfg_db_to_use["ecadmin_password"])) > 0) {
+    if (strlen($toolbox->check_password($cfg_db_to_use["ecadmin_password"])) > 0) {
         ?>
 	<h4>Das Kennwort genügt nicht den Sicherheitsregeln</h4>
 	<p>
@@ -101,7 +101,7 @@ if ((isset($_GET['done']) && intval($_GET["done"]) == 1)) {
         echo "</div>";
         exit();
     }
-    if (strcasecmp($$cfg_db_to_use["ecadmin_Name"], "admin") == 0) {
+    if (strcasecmp($cfg_db_to_use["ecadmin_Name"], "admin") == 0) {
         ?>
 	<h4>Der admin-Name 'admin' ist unzulässig. Bitte verwende einen anderen admin Namen.</h4>
 	<p>
@@ -113,20 +113,18 @@ if ((isset($_GET['done']) && intval($_GET["done"]) == 1)) {
     }
     
     // set session user to selected admin, in order to be able to manipulate the data base.
-    $_SESSION["User"]["Vorname"] = $$cfg_db_to_use["ecadmin_vorname"];
-    $_SESSION["User"]["Nachname"] = $$cfg_db_to_use["ecadmin_nachname"];
-    $_SESSION["User"]["EMail"] = $$cfg_db_to_use["ecadmin_mail"];
-    $_SESSION["User"]["efaCloudUserID"] = $$cfg_db_to_use["ecadmin_id"];
-    $_SESSION["User"]["efaAdminName"] = $$cfg_db_to_use["ecadmin_Name"];
-    $_SESSION["User"]["Passwort_Hash"] = password_hash($$cfg_db_to_use["ecadmin_password"], PASSWORD_DEFAULT);
+    $_SESSION["User"]["Vorname"] = $cfg_db_to_use["ecadmin_vorname"];
+    $_SESSION["User"]["Nachname"] = $cfg_db_to_use["ecadmin_nachname"];
+    $_SESSION["User"]["EMail"] = $cfg_db_to_use["ecadmin_mail"];
+    $_SESSION["User"]["efaCloudUserID"] = $cfg_db_to_use["ecadmin_id"];
+    $_SESSION["User"]["efaAdminName"] = $cfg_db_to_use["ecadmin_Name"];
+    $_SESSION["User"]["Passwort_Hash"] = password_hash($cfg_db_to_use["ecadmin_password"], PASSWORD_DEFAULT);
     $_SESSION["User"]["Rolle"] = "admin";
     
     // ===== create data base
-    include_once '../classes/efa_tables.php';
-    $efa_tables = new Efa_tables($toolbox, $socket);
     include_once '../classes/efa_tools.php';
-    $efa_tools = new Efa_tools($efa_tables, $toolbox);
-    $result_bootstrap = $efa_tools->init_efa_data_base(true, true);
+    $efa_tools = new Efa_tools($toolbox, $socket);
+    $result_bootstrap = $efa_tools->init_efa_data_base(true, true, true);
     
     echo "<p>" . $result_bootstrap . "</p>";
     // Display result and next steps
@@ -151,7 +149,7 @@ if ((isset($_GET['done']) && intval($_GET["done"]) == 1)) {
 
     <?php
     // Display form fields depending on the installation mode.
-    foreach ($$cfg_db_default as $key => $value)
+    foreach ($cfg_db_default as $key => $value)
         echo '<tr><td>' . $key . ':<br>' . $cfg_db_description[$key] .
                  '&nbsp;</td><td><input class="forminput" type="' . $cfg_db_type[$key] .
                  '" size="35" maxlength="250" name="' . $key . '" value="' . $value . '"></td></tr>';

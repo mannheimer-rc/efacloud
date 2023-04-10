@@ -19,8 +19,6 @@ class Tfyh_config
 
     public $changelog_name;
 
-    public $parameter_table_name;
-
     public $pdf_footer_text;
 
     public $pdf_document_author;
@@ -28,6 +26,8 @@ class Tfyh_config
     public $pdf_margins;
 
     public $settings_tfyh;
+
+    public $language_code;
 
     /**
      * Debug level to add more information for support cases.
@@ -75,7 +75,6 @@ class Tfyh_config
         if (! isset($this->settings_tfyh["config"]["parameter_table_name"]))
             $this->settings_tfyh["config"]["parameter_table_name"] = "";
         // assign directly accessable framework settings
-        $this->app_url = (isset($this->cfg_app["app_url"])) ? $this->cfg_app["app_url"] : "https://www.tfyh.org";
         $this->app_name = $this->settings_tfyh["config"]["app_name"];
         $this->changelog_name = $this->settings_tfyh["config"]["changelog_name"];
         
@@ -85,9 +84,11 @@ class Tfyh_config
         // generate the app_info array with information on version and copyright
         $this->app_info = [];
         $this->app_info["version_string"] = (file_exists("../public/version")) ? file_get_contents(
-                "../public/version") : "";
+                "../public/version") : " ";
         $this->app_info["copyright"] = (file_exists("../public/copyright")) ? file_get_contents(
-                "../public/copyright") : "";
+                "../public/copyright") : " ";
+        $this->app_info["applogo"] = (file_exists("../public/applogo")) ? file_get_contents(
+                "../public/applogo") : " ";
         if (strlen($this->app_info["version_string"]) > 0) {
             $parts = explode("_", $this->app_info["version_string"]);
             if (count($parts) > 1)
@@ -105,6 +106,8 @@ class Tfyh_config
         
         // read the application settings. They may have changed, so this can also be triggered from outside
         $this->load_app_configuration();
+        $this->app_url = $this->cfg_app["app_url"];
+        $this->language_code = $this->cfg_app["language_code"];
     }
 
     /**
@@ -130,6 +133,8 @@ class Tfyh_config
         $this->cfg_app["pdf_margins"] = [15,15,15,10,10
         ];
         $this->cfg_app["debug_support"] = "";
+        $this->cfg_app["app_url"] = "https://www.tfyh.org";
+        $this->cfg_app["language_code"] = "de";
         
         // apply the application configuration defaults as available in the framework settings
         if (isset($this->settings_tfyh["default"]) && is_array($this->settings_tfyh["default"]))
@@ -162,12 +167,12 @@ class Tfyh_config
             $field_value = json_decode($value_string);
         elseif (substr($value_string, 0, 1) == "\"") // String literal. In config files, but not in
                                                      // forms
-            $field_value = substr($value_string, 1, strlen($value_string) - 2);
+            $field_value = mb_substr($value_string, 1, mb_strlen($value_string) - 2);
         elseif (strcasecmp($value_string, "false") == 0)
             $field_value = false;
         elseif (strcasecmp($value_string, "true") == 0)
             $field_value = true;
-        elseif ((strlen($value_string) == 12) && (count(explode("-", $value_string)) == 3))
+        elseif ((mb_strlen($value_string) == 12) && (count(explode("-", $value_string)) == 3))
             $field_value = strtotime($value_string);
         elseif (is_numeric($value_string)) {
             if (strpos($value_string, ".") !== false)
@@ -186,7 +191,7 @@ class Tfyh_config
      */
     private function abort_on_missing_setting (String $nameToDisplay)
     {
-        echo "Missing setting: " . $nameToDisplay . ". The application can not start.";
+        echo i("rgqM2t|Missing setting: %1. The...", $nameToDisplay);
         exit();
     }
 
@@ -207,7 +212,7 @@ class Tfyh_config
                 // split name and value
                 $field_id = explode("=", $setting_tfyh, 2)[0];
                 if (count(explode(".", $field_id)) < 2) {
-                    echo "invalid field id in settings_tfyh: " . $field_id;
+                    echo i("GUOWvb|Invalid field id in sett...") . " " . $field_id;
                     exit();
                 }
                 $field_value = explode("=", $setting_tfyh, 2)[1];
@@ -304,14 +309,14 @@ class Tfyh_config
         $settings_path = "../config/settings_app";
         $cfgStr = serialize($cfg_app);
         $cfgStrBase64 = base64_encode($cfgStr);
-        $info = "<p>'$settings_path' wird geschrieben ... ";
+        $info = "<p>" . i("c6AQAt|°%1° is written ... ", $settings_path);
         $byte_cnt = file_put_contents($settings_path, $cfgStrBase64);
-        $info .= $byte_cnt . " Bytes.</p>";
+        $info .= $byte_cnt . " " . i("n6ky2H|Byte.") . "</p>";
         return $info;
     }
 
     /**
-     * simple getter of the tenant settings (settings_app).
+     * simple getter of the tenant settings (cfg_app).
      * 
      * @return array the configuration regarding the tenant settings
      */
